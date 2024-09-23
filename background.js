@@ -19,7 +19,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     chrome.storage.local.get(['markdownData'], (result) => {
       const { markdownData } = result;
       if (markdownData && markdownData.every(item => !item.isLoading)) {
-        const concatenated = markdownData.map(item => `<url>${item.url}</url>\n<title>${item.title}</title>\n${item.markdown}`).join('\n');
+        const concatenated = markdownData.map(item => `<url>${item.url}</url>\n<title>${item.title}</title>\n${item.markdown}`).join('\n\n\n');
         copyToClipboard(concatenated);
         sendResponse({ status: "Markdown copied to clipboard" });
       } else {
@@ -105,7 +105,7 @@ function copyToClipboard(text) {
   chrome.tabs.create({ active: false, url: "copy.html" }, (tab) => {
     chrome.tabs.executeScript(tab.id, { code: `
       const textarea = document.createElement('textarea');
-      textarea.value = \`${text}\`;
+      textarea.value = \`${text.replace(/`/g, '\\`')}\`;
       document.body.appendChild(textarea);
       textarea.select();
       document.execCommand('copy');
