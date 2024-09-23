@@ -4,12 +4,16 @@
   <meta charset="UTF-8">
   <title>Collected Markdown</title>
   <style>
+    body {
+      background-color: var(--background-color);
+      color: var(--text-color);
+    }
     .container {
       width: 80%;
       margin: auto;
     }
     .box {
-      border: 1px solid #ccc;
+      border: 1px solid var(--border-color);
       padding: 10px;
       margin: 10px 0;
     }
@@ -24,9 +28,35 @@
     .box-content textarea {
       width: 100%;
       height: 200px;
+      background-color: var(--textarea-background);
+      color: var(--textarea-color);
     }
     .loading {
-      color: blue;
+      color: var(--loading-color);
+    }
+
+    /* Light theme */
+    @media (prefers-color-scheme: light) {
+      :root {
+        --background-color: #ffffff;
+        --text-color: #000000;
+        --border-color: #ccc;
+        --textarea-background: #ffffff;
+        --textarea-color: #000000;
+        --loading-color: blue;
+      }
+    }
+
+    /* Dark theme */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background-color: #121212;
+        --text-color: #ffffff;
+        --border-color: #444;
+        --textarea-background: #333;
+        --textarea-color: #ffffff;
+        --loading-color: lightblue;
+      }
     }
   </style>
 </head>
