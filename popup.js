@@ -1,20 +1,19 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const toggleButton = document.getElementById('toggle-listening');
+  const toggleSwitch = document.getElementById('toggle-listening');
   const openMarkdownButton = document.getElementById('open-markdown');
   const copyMarkdownButton = document.getElementById('copy-markdown');
-  const statusMessage = document.getElementById('status-message'); // Add a status message element
+  const statusMessage = document.getElementById('status-message');
 
-  // Initialize toggle button text and status message based on current state
+  // Initialize toggle switch and status message based on current state
   chrome.storage.local.get(['isListening'], (result) => {
     const isListening = result.isListening || false;
-    toggleButton.textContent = isListening ? 'Stop Listening' : 'Start Listening';
+    toggleSwitch.checked = isListening;
     statusMessage.textContent = isListening ? '🟢 Listening for URLs...' : '🔴 Not listening.';
   });
 
-  toggleButton.addEventListener('click', () => {
+  toggleSwitch.addEventListener('change', () => {
     chrome.runtime.sendMessage({ command: 'toggle-listening' }, (response) => {
       if (response && response.status) {
-        toggleButton.textContent = response.status === 'Listening started' ? 'Stop Listening' : 'Start Listening';
         statusMessage.textContent = response.status === 'Listening started' ? '🟢 Listening for URLs...' : '🔴 Not listening.';
       }
     });

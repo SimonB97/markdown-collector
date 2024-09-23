@@ -11,13 +11,55 @@
       background-color: var(--background-color);
       color: var(--text-color);
     }
+    .button-container {
+      display: flex;
+      justify-content: space-between;
+    }
     button {
-      width: 100%;
+      flex: 1;
       padding: 8px;
-      margin: 5px 0;
+      margin: 5px 2px;
       background-color: var(--button-background);
       color: var(--button-color);
       border: 1px solid var(--button-border);
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 34px;
+      height: 20px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--button-background);
+      border: 1px solid var(--button-border);
+      transition: .4s;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 2px;
+      bottom: 2px;
+      background-color: var(--button-color);
+      transition: .4s;
+    }
+    input:checked + .slider {
+      background-color: var(--button-background);
+    }
+    input:checked + .slider:before {
+      transform: translateX(14px);
     }
 
     /* Light theme */
@@ -44,10 +86,15 @@
   </style>
 </head>
 <body>
-  <button id="toggle-listening">Start Listening</button>
-  <button id="open-markdown">Open Markdown Page</button>
-  <button id="copy-markdown">Copy Markdown</button>
-  <div id="status-message">Not listening.</div> <!-- Add this line -->
+  <label class="switch">
+    <input type="checkbox" id="toggle-listening">
+    <span class="slider"></span>
+  </label>
+  <div class="button-container">
+    <button id="open-markdown">Open Markdown Page</button>
+    <button id="copy-markdown">Copy Markdown</button>
+  </div>
+  <div id="status-message">Not listening.</div>
   <script src="popup.js"></script>
 </body>
 </html>
