@@ -1,40 +1,35 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const toggleListeningBtn = document.getElementById('toggleListening');
-    const openHTMLPageBtn = document.getElementById('openHTMLPage');
-    const darkModeToggle = document.getElementById('darkModeToggle');
-    const overwriteCheckbox = document.getElementById('overwriteCheckbox');
-  
-    browser.storage.local.get(['darkMode', 'overwriteExisting'], (data) => {
-      darkModeToggle.checked = data.darkMode;
-      overwriteCheckbox.checked = data.overwriteExisting;
-      updateTheme(data.darkMode);
-    });
-  
-    toggleListeningBtn.addEventListener('click', () => {
-      browser.runtime.sendMessage({ action: "toggleListening" });
-    });
-  
-    openHTMLPageBtn.addEventListener('click', () => {
-      browser.runtime.sendMessage({ action: "openHTMLPage" });
-    });
-  
-    darkModeToggle.addEventListener('change', (e) => {
-      const isDarkMode = e.target.checked;
-      browser.storage.local.set({ darkMode: isDarkMode });
-      updateTheme(isDarkMode);
-    });
-  
-    overwriteCheckbox.addEventListener('change', (e) => {
-      browser.storage.local.set({ overwriteExisting: e.target.checked });
-    });
-  
-    browser.runtime.onMessage.addListener((request) => {
-      if (request.action === "updateListeningStatus") {
-        toggleListeningBtn.textContent = request.isListening ? "Stop Listening" : "Start Listening";
+  const toggleButton = document.getElementById('toggle-listening');
+  const openMarkdownButton = document.getElementById('open-markdown');
+  const copyMarkdownButton = document.getElementById('copy-markdown');
+
+  chrome.storage.local.get(['isListening'], (result) => {
+    console.log("Initial isListening state:", result.isListening);
+    toggleButton.textContent = result.isListening ? 'Stop Listening' : 'Start Listening';
+  });
+
+  toggleButton.addEventListener('click', () => {
+    console.log("Toggle listening button clicked");
+    chrome.runtime.sendMessage({ command: 'toggle-listening' }, (response) => {
+      if (response && response.status) {
+        console.log("Toggle listening response:", response);
+        toggleButton.textContent = response.status === 'Listening started' ? 'Stop Listening' : 'Start Listening';
       }
     });
   });
-  
-  function updateTheme(isDarkMode) {
-    document.body.classList.toggle('dark', isDarkMode);
-  }
+
+  openMarkdownButton.addEventListener('click', () => {
+    console.log("Open markdown button clicked");
+    chrome.tabs.create({ url: chrome.runtime.getURL('markdown.html') });
+  });
+
+  copyMarkdownButton.addEventListener('click', () => {
+    console.log("Copy markdown button clicked");
+    chrome.runtime.sendMessage({ command: 'copy-markdown' }, (response) => {
+      if (response && response.status) {
+        console.log("Copy markdown response:", response);
+        alert(response.status);
+      }
+    });
+  });
+});

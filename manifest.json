@@ -1,43 +1,56 @@
 {
-    "manifest_version": 2,
-    "name": "Markdown URL Collector",
-    "version": "1.0",
-    "description": "Collect URLs and convert page content to markdown",
-    "permissions": [
-      "activeTab",
-      "storage",
-      "tabs",
-      "<all_urls>",
-      "clipboardWrite"
-    ],
-    "browser_action": {
-      "default_popup": "popup.html",
-      "default_icon": {
-        "48": "icon48.png"
-      }
-    },
-    "background": {
-      "scripts": ["background.js"],
-      "persistent": false
-    },
-    "content_scripts": [
-      {
-        "matches": ["<all_urls>"],
-        "js": ["turndown.js", "content.js"]
-      }
-    ],
-    "commands": {
-      "toggle-listening": {
-        "suggested_key": {
-          "default": "Alt+L"
-        },
-        "description": "Toggle URL listening"
+  "manifest_version": 2,
+  "name": "URL to Markdown Collector",
+  "version": "1.0",
+  "description": "Collects URLs and converts page content to Markdown.",
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "storage"
+  ],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "your-extension-id@domain.com",
+      "strict_min_version": "68.0"
+    }
+  },
+  "browser_action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "48": "icons/icon48.png"
+    }
+  },
+  "icons": {
+    "48": "icons/icon48.png"
+  },
+  "commands": {
+    "toggle-listening": {
+      "suggested_key": {
+        "default": "Ctrl+Alt+L"
       },
-      "open-html-page": {
-        "suggested_key": {
-          "default": "Alt+M"
-        },
-        "description": "Open HTML page with collected markdown"
-      }
+      "description": "Toggle listening for URLs"
+    },
+    "save-url": {
+      "suggested_key": {
+        "default": "Ctrl+Alt+S"
+      },
+      "description": "Save current URL and convert to Markdown"
+    },
+    "open-markdown-page": {
+      "suggested_key": {
+        "default": "Ctrl+Alt+M"
+      },
+      "description": "Open Markdown collection page"
+    },
+    "copy-markdown": {
+      "suggested_key": {
+        "default": "Ctrl+Alt+C"
+      },
+      "description": "Copy concatenated Markdown to clipboard"
     }
   }
+}

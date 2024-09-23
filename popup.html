@@ -1,34 +1,22 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Markdown URL Collector</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <script src="popup.js"></script>
+  <title>URL to Markdown Collector</title>
+  <style>
+    /* Basic styling for buttons */
+    button {
+      margin: 5px;
+      padding: 10px;
+      width: 150px;
+    }
+  </style>
 </head>
-<body class="p-4 transition-colors duration-200">
-  <div class="space-y-4">
-    <button id="toggleListening" class="w-full px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600">Start Listening</button>
-    <button id="openHTMLPage" class="w-full px-4 py-2 text-white bg-green-500 rounded hover:bg-green-600">Open Markdown Page</button>
-    <div class="flex items-center justify-between">
-      <label for="darkModeToggle" class="flex items-center cursor-pointer">
-        <div class="relative">
-          <input type="checkbox" id="darkModeToggle" class="sr-only">
-          <div class="w-10 h-4 bg-gray-400 rounded-full shadow-inner"></div>
-          <div class="absolute w-6 h-6 bg-white rounded-full shadow -left-1 -top-1 transition"></div>
-        </div>
-        <div class="ml-3 text-gray-700 font-medium">
-          Dark Mode
-        </div>
-      </label>
-    </div>
-    <div class="flex items-center">
-      <input type="checkbox" id="overwriteCheckbox" class="form-checkbox h-5 w-5 text-blue-600">
-      <label for="overwriteCheckbox" class="ml-2 text-gray-700">
-        Overwrite existing entries
-      </label>
-    </div>
-  </div>
+<body>
+  <button id="toggle-listening">Start Listening</button>
+  <button id="open-markdown">Open Markdown Page</button>
+  <button id="copy-markdown">Copy Markdown</button>
+
+  <script src="popup.js"></script>
 </body>
 </html>

@@ -1,70 +1,125 @@
 let isListening = false;
-let savedURLs = [];
 
-browser.runtime.onInstalled.addListener(() => {
-  browser.storage.local.set({ overwriteExisting: false, darkMode: false, backgroundConversion: false });
-});
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log("Received message:", request);
 
-browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "toggleListening") {
+  if (request.command === "toggle-listening") {
     isListening = !isListening;
-    browser.runtime.sendMessage({ action: "updateListeningStatus", isListening });
-  } else if (request.action === "saveCurrentURL") {
-    saveCurrentURL();
-  }
-});
-
-browser.commands.onCommand.addListener((command) => {
-  if (command === "toggle-listening") {
-    isListening = !isListening;
-    browser.runtime.sendMessage({ action: "updateListeningStatus", isListening });
-  } else if (command === "open-html-page") {
-    openHTMLPage();
-  }
-});
-
-function saveCurrentURL() {
-  if (isListening) {
-    browser.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const url = tabs[0].url;
-      browser.storage.local.get("overwriteExisting", (data) => {
-        if (savedURLs.includes(url) && !data.overwriteExisting) {
-          promptUserForDuplicateAction(url);
-        } else {
-          addURLToList(url);
-        }
-      });
+    chrome.storage.local.set({ isListening }, () => {
+      if (chrome.runtime.lastError) {
+        console.error("Error setting isListening:", chrome.runtime.lastError);
+      }
+      sendResponse({ status: isListening ? "Listening started" : "Listening stopped" });
     });
+    return true; // Indicates that the response is sent asynchronously
+  } else if (request.command === "save-url" && isListening) {
+    saveCurrentTabUrl(sendResponse);
+    return true; // Indicates that the response is sent asynchronously
+  } else if (request.command === "copy-markdown") {
+    chrome.storage.local.get(['markdownData'], (result) => {
+      const { markdownData } = result;
+      if (markdownData && markdownData.every(item => !item.isLoading)) {
+        const concatenated = markdownData.map(item => `<url>${item.url}</url>\n<title>${item.title}</title>\n${item.markdown}`).join('\n');
+        copyToClipboard(concatenated);
+        sendResponse({ status: "Markdown copied to clipboard" });
+      } else {
+        console.warn("Some markdown data is still loading.");
+        sendResponse({ status: "Some markdown data is still loading" });
+      }
+    });
+    return true; // Indicates that the response is sent asynchronously
   }
-}
+});
 
-function promptUserForDuplicateAction(url) {
-  browser.tabs.create({
-    url: "duplicate_prompt.html",
-    active: true
-  });
-}
-
-function addURLToList(url, isDuplicate = false) {
-  if (!isDuplicate) {
-    savedURLs = savedURLs.filter(savedUrl => savedUrl !== url);
+chrome.commands.onCommand.addListener((command) => {
+  console.log("Command received:", command);
+  if (command === "save-url" && isListening) {
+    saveCurrentTabUrl();
   }
-  savedURLs.push(url);
-  startConvertToMarkdown(url);
-}
+});
 
-function startConvertToMarkdown(url) {
-  browser.storage.local.get("backgroundConversion", (data) => {
-    if (data.backgroundConversion) {
-      // Queue conversion task (implementation depends on your task queue system)
-    } else {
-      browser.tabs.sendMessage(tabs[0].id, { action: "convertToMarkdown", url });
+function saveCurrentTabUrl(sendResponse) {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const tab = tabs[0];
+    if (tab) {
+      chrome.storage.local.get(['markdownData'], (result) => {
+        const markdownData = result.markdownData || [];
+        markdownData.push({ url: tab.url, title: tab.title, markdown: "", isLoading: true });
+        chrome.storage.local.set({ markdownData }, () => {
+          if (chrome.runtime.lastError) {
+            console.error("Error setting markdownData:", chrome.runtime.lastError);
+          }
+          injectContentScriptAndConvert(tab.id, sendResponse);
+        });
+      });
     }
   });
 }
 
-function openHTMLPage() {
-  browser.tabs.create({
-    url: "markdown_view.html"
+function injectContentScriptAndConvert(tabId, sendResponse) {
+  chrome.tabs.executeScript(tabId, { file: "turndown.js" }, () => {
+    if (chrome.runtime.lastError) {
+      console.error("Error injecting turndown.js:", chrome.runtime.lastError);
+      return;
+    }
+    chrome.tabs.executeScript(tabId, { file: "content.js" }, () => {
+      if (chrome.runtime.lastError) {
+        console.error("Error injecting content.js:", chrome.runtime.lastError);
+        return;
+      }
+      chrome.tabs.sendMessage(tabId, { command: "convert-to-markdown" }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error("Error sending message to content script:", chrome.runtime.lastError);
+        }
+        if (response && response.markdown) {
+          updateMarkdownData(tabId, response.markdown);
+        }
+        if (sendResponse) {
+          sendResponse({ status: "URL saved and conversion started" });
+        }
+      });
+    });
   });
 }
+
+function updateMarkdownData(tabId, markdown) {
+  chrome.tabs.get(tabId, (tab) => {
+    chrome.storage.local.get(['markdownData'], (result) => {
+      const markdownData = result.markdownData || [];
+      const index = markdownData.findIndex(item => item.url === tab.url);
+      if (index !== -1) {
+        markdownData[index].markdown = markdown;
+        markdownData[index].isLoading = false;
+        chrome.storage.local.set({ markdownData }, () => {
+          if (chrome.runtime.lastError) {
+            console.error("Error updating markdownData:", chrome.runtime.lastError);
+          }
+        });
+      }
+    });
+  });
+}
+
+function copyToClipboard(text) {
+  console.log("Copying to clipboard:", text);
+  chrome.tabs.create({ active: false, url: "copy.html" }, (tab) => {
+    chrome.tabs.executeScript(tab.id, { code: `
+      const textarea = document.createElement('textarea');
+      textarea.value = \`${text}\`;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      window.close();
+    ` }, () => {
+      if (chrome.runtime.lastError) {
+        console.error("Error executing copy script:", chrome.runtime.lastError);
+      }
+    });
+  });
+}
+
+// Initialize isListening state
+chrome.storage.local.get(['isListening'], (result) => {
+  isListening = result.isListening || false;
+});

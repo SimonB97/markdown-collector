@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Collected Markdown</title>
+  <style>
+    .container {
+      width: 80%;
+      margin: auto;
+    }
+    .box {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    .box-title {
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .box-content {
+      display: none;
+      margin-top: 10px;
+    }
+    .box-content textarea {
+      width: 100%;
+      height: 200px;
+    }
+    .loading {
+      color: blue;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="markdown-container">
+    <!-- Dynamic content will be injected here -->
+  </div>
+
+  <script src="markdown.js"></script>
+</body>
+</html>

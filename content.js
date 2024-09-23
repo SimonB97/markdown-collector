@@ -1,13 +1,19 @@
-const turndownService = new TurndownService();
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log("Received message in content script:", request);
 
-browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "convertToMarkdown") {
+  if (request.command === 'convert-to-markdown') {
     const markdown = convertPageToMarkdown();
-    browser.storage.local.set({ [request.url]: markdown });
+    sendResponse({ markdown: markdown });
   }
+  return true; // Indicates that the response is sent asynchronously
 });
 
 function convertPageToMarkdown() {
-  const content = document.body.innerHTML;
-  return turndownService.turndown(content);
+  console.log("Converting page to markdown");
+  // Use Turndown for more accurate conversion
+  const turndownService = new TurndownService();
+  const title = document.title;
+  const bodyHTML = document.body.innerHTML;
+  const bodyMarkdown = turndownService.turndown(bodyHTML);
+  return `# ${title}\n\n${bodyMarkdown}`;
 }
