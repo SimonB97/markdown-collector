@@ -15,17 +15,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.command === "save-url" && isListening) {
     saveCurrentTabUrl(sendResponse);
     return true; // Indicates that the response is sent asynchronously
-  } else if (request.command === "copy-markdown") {
+  } else if (request.command === "open-markdown-page") {
+    openMarkdownPage();
+    sendResponse({ status: "Markdown page opened" });
+  } else if (request.command === "get-markdown-data") {
     chrome.storage.local.get(['markdownData'], (result) => {
-      const { markdownData } = result;
-      if (markdownData && markdownData.every(item => !item.isLoading)) {
-        const concatenated = markdownData.map(item => `<url>${item.url}</url>\n<title>${item.title}</title>\n${item.markdown}`).join('\n\n\n');
-        copyToClipboard(concatenated);
-        sendResponse({ status: "Markdown copied to clipboard" });
-      } else {
-        console.warn("Some markdown data is still loading.");
-        sendResponse({ status: "Some markdown data is still loading" });
-      }
+      sendResponse({ markdownData: result.markdownData });
     });
     return true; // Indicates that the response is sent asynchronously
   }
@@ -35,6 +30,9 @@ chrome.commands.onCommand.addListener((command) => {
   console.log("Command received:", command);
   if (command === "save-url" && isListening) {
     saveCurrentTabUrl();
+  } else if (command === "copy-markdown") {
+    // Notify popup to handle copy
+    // Alternatively, implement copy here if possible
   }
 });
 
@@ -100,22 +98,11 @@ function updateMarkdownData(tabId, markdown) {
   });
 }
 
-function copyToClipboard(text) {
-  console.log("Copying to clipboard:", text);
-  chrome.tabs.create({ active: false, url: "copy.html" }, (tab) => {
-    chrome.tabs.executeScript(tab.id, { code: `
-      const textarea = document.createElement('textarea');
-      textarea.value = \`${text.replace(/`/g, '\\`')}\`;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-      window.close();
-    ` }, () => {
-      if (chrome.runtime.lastError) {
-        console.error("Error executing copy script:", chrome.runtime.lastError);
-      }
-    });
+function openMarkdownPage() {
+  chrome.tabs.create({ url: "markdown.html" }, (tab) => {
+    if (chrome.runtime.lastError) {
+      console.error("Error opening markdown page:", chrome.runtime.lastError);
+    }
   });
 }
 

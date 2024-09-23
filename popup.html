@@ -4,11 +4,42 @@
   <meta charset="UTF-8">
   <title>URL to Markdown Collector</title>
   <style>
-    /* Basic styling for buttons */
-    button {
-      margin: 5px;
+    body {
+      font-family: Arial, sans-serif;
+      width: 200px;
       padding: 10px;
-      width: 150px;
+      background-color: var(--background-color);
+      color: var(--text-color);
+    }
+    button {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0;
+      background-color: var(--button-background);
+      color: var(--button-color);
+      border: 1px solid var(--button-border);
+    }
+
+    /* Light theme */
+    @media (prefers-color-scheme: light) {
+      :root {
+        --background-color: #ffffff;
+        --text-color: #000000;
+        --button-background: #f0f0f0;
+        --button-color: #000000;
+        --button-border: #ccc;
+      }
+    }
+
+    /* Dark theme */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background-color: #121212;
+        --text-color: #ffffff;
+        --button-background: #333;
+        --button-color: #ffffff;
+        --button-border: #444;
+      }
     }
   </style>
 </head>
@@ -16,7 +47,7 @@
   <button id="toggle-listening">Start Listening</button>
   <button id="open-markdown">Open Markdown Page</button>
   <button id="copy-markdown">Copy Markdown</button>
-
+  <div id="status-message">Not listening.</div> <!-- Add this line -->
   <script src="popup.js"></script>
 </body>
 </html>
