@@ -1,30 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const toggleSwitch = document.getElementById('toggle-listening');
   const openMarkdownButton = document.getElementById('open-markdown');
   const copyMarkdownButton = document.getElementById('copy-markdown');
   const statusMessage = document.getElementById('status-message');
-
-  // Initialize toggle switch and status message based on current state
-  chrome.storage.local.get(['isListening'], (result) => {
-    const isListening = result.isListening || false;
-    toggleSwitch.checked = isListening;
-    statusMessage.textContent = isListening ? 'Listening...' : 'Paused';
-    statusMessage.style.color = isListening ? 'green' : 'red';
-  });
-
-  toggleSwitch.addEventListener('change', () => {
-    chrome.runtime.sendMessage({ command: 'toggle-listening' }, (response) => {
-      if (response && response.status === 'success') {
-        const isListening = response.isListening;
-        statusMessage.textContent = isListening ? 'Listening...' : 'Paused';
-        statusMessage.style.color = isListening ? 'green' : 'red';
-      } else {
-        console.error('Failed to toggle listening:', response.message);
-        // Revert the toggle switch state if there was an error
-        toggleSwitch.checked = !toggleSwitch.checked;
-      }
-    });
-  });
 
   openMarkdownButton.addEventListener('click', () => {
     chrome.runtime.sendMessage({ command: 'open-markdown-page' }, (response) => {

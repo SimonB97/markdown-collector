@@ -1,20 +1,7 @@
-let isListening = false;
-
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log("Received message:", request);
 
-  if (request.command === "toggle-listening") {
-    isListening = !isListening;
-    chrome.storage.local.set({ isListening }, () => {
-      if (chrome.runtime.lastError) {
-        console.error("Error setting isListening:", chrome.runtime.lastError);
-        sendResponse({ status: "error", message: chrome.runtime.lastError });
-      } else {
-        sendResponse({ status: "success", isListening });
-      }
-    });
-    return true; // Indicates that the response is sent asynchronously
-  } else if (request.command === "save-url" && isListening) {
+  if (request.command === "save-url") {
     saveCurrentTabUrl(sendResponse);
     return true; // Indicates that the response is sent asynchronously
   } else if (request.command === "open-markdown-page") {
@@ -56,7 +43,7 @@ function performFetch(url, sendResponse) {
 
 chrome.commands.onCommand.addListener((command) => {
   console.log("Command received:", command);
-  if (command === "save-url" && isListening) {
+  if (command === "save-url") {
     saveCurrentTabUrl();
   } else if (command === "copy-markdown") {
     // Notify popup to handle copy
@@ -139,8 +126,3 @@ function openMarkdownPage() {
     }
   });
 }
-
-// Initialize isListening state
-chrome.storage.local.get(['isListening'], (result) => {
-  isListening = result.isListening || false;
-});

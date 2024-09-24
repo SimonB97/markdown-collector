@@ -30,12 +30,6 @@
     "48": "icons/icon48.png"
   },
   "commands": {
-    "toggle-listening": {
-      "suggested_key": {
-        "default": "Ctrl+Alt+L"
-      },
-      "description": "Toggle listening for URLs"
-    },
     "save-url": {
       "suggested_key": {
         "default": "Ctrl+Alt+S"
