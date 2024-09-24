@@ -8,13 +8,13 @@ document.addEventListener('DOMContentLoaded', () => {
   chrome.storage.local.get(['isListening'], (result) => {
     const isListening = result.isListening || false;
     toggleSwitch.checked = isListening;
-    statusMessage.textContent = isListening ? '🟢 Listening...' : '🔴';
+    statusMessage.textContent = isListening ? '🟢 Listening...' : '🔴 Not listening.';
   });
 
   toggleSwitch.addEventListener('change', () => {
     chrome.runtime.sendMessage({ command: 'toggle-listening' }, (response) => {
       if (response && response.status) {
-        statusMessage.textContent = response.status === 'Listening started' ? '🟢 Listening...' : '🔴';
+        statusMessage.textContent = response.status === 'Listening started' ? '🟢 Listening...' : '🔴 Not listening.';
       }
     });
   });
@@ -26,33 +26,23 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   copyMarkdownButton.addEventListener('click', () => {
-    chrome.runtime.sendMessage({ command: 'get-markdown-data' }, (response) => {
-      if (response && response.markdownData) {
-        const concatenated = response.markdownData.map(item => `<url>${item.url}</url>\n<title>${item.title}</title>\n${item.markdown}`).join('\n\n\n');
-        copyToClipboard(concatenated)
-          .then(() => {
-            // Display checkmark on the button
-            copyMarkdownButton.textContent = '✔ Copied';
-            setTimeout(() => {
-              copyMarkdownButton.textContent = 'Copy Markdown';
-            }, 2000); // Reset button text after 2 seconds
-          })
-          .catch((err) => {
-            console.error('Error copying to clipboard:', err);
-            alert('Failed to copy markdown.');
-          });
-      } else {
-        alert('No markdown data available to copy.');
+    chrome.tabs.query({ url: chrome.runtime.getURL("markdown.html") }, (tabs) => {
+      if (tabs.length === 0) {
+        alert('Markdown page is not open.');
+        return;
       }
+
+      chrome.tabs.sendMessage(tabs[0].id, { command: 'copy-selected-markdown' }, (response) => {
+        if (response && response.status === 'success') {
+          // Display checkmark on the button
+          copyMarkdownButton.textContent = '✔ Copied';
+          setTimeout(() => {
+            copyMarkdownButton.textContent = 'Copy Markdown';
+          }, 2000); // Reset button text after 2 seconds
+        } else {
+          alert('Failed to copy markdown.');
+        }
+      });
     });
   });
-
-  /**
-   * Copies the provided text to the clipboard using the Clipboard API.
-   * @param {string} text - The text to copy.
-   * @returns {Promise}
-   */
-  function copyToClipboard(text) {
-    return navigator.clipboard.writeText(text);
-  }
 });

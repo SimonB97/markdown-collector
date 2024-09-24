@@ -42,7 +42,13 @@ function saveCurrentTabUrl(sendResponse) {
     if (tab) {
       chrome.storage.local.get(['markdownData'], (result) => {
         const markdownData = result.markdownData || [];
-        markdownData.push({ url: tab.url, title: tab.title, markdown: "", isLoading: true });
+        markdownData.push({
+          url: tab.url,
+          title: tab.title,
+          markdown: "",
+          isLoading: true,
+          savedAt: new Date().toISOString() // Ensure savedAt is correctly set
+        });
         chrome.storage.local.set({ markdownData }, () => {
           if (chrome.runtime.lastError) {
             console.error("Error setting markdownData:", chrome.runtime.lastError);
