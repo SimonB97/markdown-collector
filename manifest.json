@@ -7,7 +7,8 @@
     "tabs",
     "activeTab",
     "storage",
-    "clipboardWrite"
+    "clipboardWrite",
+    "<all_urls>"
   ],
   "background": {
     "scripts": ["background.js"],
@@ -62,6 +63,8 @@
   ],
   "web_accessible_resources": [
     "fonts/Atkinson-Hyperlegible-Regular-102.ttf",
-    "fonts/Atkinson-Hyperlegible-Bold-102.ttf"
+    "fonts/Atkinson-Hyperlegible-Bold-102.ttf",
+    "diff.min.js",
+    "turndown.js"
   ]
 }

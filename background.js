@@ -25,8 +25,34 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse({ markdownData: result.markdownData });
     });
     return true; // Indicates that the response is sent asynchronously
+  } else if (request.command === "fetch-url") {
+    performFetch(request.url, sendResponse);
+    return true; // Indicates that the response is sent asynchronously
   }
 });
+
+// Function to perform fetch using XMLHttpRequest
+function performFetch(url, sendResponse) {
+  console.log(`Performing fetch for URL: ${url}`);
+  const xhr = new XMLHttpRequest();
+  xhr.open("GET", url, true);
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState === XMLHttpRequest.DONE) {
+      if (xhr.status === 200) {
+        console.log(`Fetch successful for URL: ${url}`);
+        sendResponse({ html: xhr.responseText });
+      } else {
+        console.error(`Error fetching URL (${url}):`, xhr.statusText);
+        sendResponse({ error: xhr.statusText });
+      }
+    }
+  };
+  xhr.onerror = function () {
+    console.error('Network Error while fetching URL.');
+    sendResponse({ error: 'Network Error' });
+  };
+  xhr.send();
+}
 
 chrome.commands.onCommand.addListener((command) => {
   console.log("Command received:", command);
@@ -49,7 +75,7 @@ function saveCurrentTabUrl(sendResponse) {
           title: tab.title,
           markdown: "",
           isLoading: true,
-          savedAt: new Date().toISOString() // Ensure savedAt is correctly set
+          savedAt: new Date().toISOString()
         });
         chrome.storage.local.set({ markdownData }, () => {
           if (chrome.runtime.lastError) {
@@ -107,7 +133,7 @@ function updateMarkdownData(tabId, markdown) {
 }
 
 function openMarkdownPage() {
-  chrome.tabs.create({ url: "markdown.html" }, (tab) => {
+  chrome.tabs.create({ url: chrome.runtime.getURL("markdown.html") }, (tab) => {
     if (chrome.runtime.lastError) {
       console.error("Error opening markdown page:", chrome.runtime.lastError);
     }

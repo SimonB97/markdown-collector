@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
   const container = document.getElementById('markdown-container');
   const copyButton = document.getElementById('copy-markdown-page');
+  const deleteButton = document.getElementById('delete-markdown-page');
+  const updateButton = document.getElementById('update-markdown-page');
 
   // Track open URLs to preserve state after UI update
   let openUrls = new Set();
@@ -9,6 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
     chrome.storage.local.get(['markdownData'], (result) => {
       console.log("Loaded markdown data:", result.markdownData);
       const { markdownData } = result;
+      
+      // Clear the container before adding new elements
+      container.innerHTML = '';
+
       if (markdownData && markdownData.length > 0) {
         const groupedData = groupByDate(markdownData);
         const dateGroups = Object.keys(groupedData);
@@ -164,7 +170,8 @@ document.addEventListener('DOMContentLoaded', () => {
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === 'local' && changes.markdownData) {
       console.log("Markdown data changed:", changes.markdownData.newValue);
-      updateUI(changes.markdownData.newValue);
+      // Reload the markdown data
+      loadMarkdownData();
     }
   });
 
@@ -279,4 +286,140 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Error copying to clipboard:', err);
     });
   });
+
+  // Add event listener for the delete button
+  deleteButton.addEventListener('click', () => {
+    const selectedUrls = [];
+
+    // Collect URLs of selected entries
+    const dateBoxes = container.querySelectorAll('.date-box');
+    dateBoxes.forEach(dateBox => {
+      const pageCheckboxes = dateBox.querySelectorAll('.page-checkbox');
+      pageCheckboxes.forEach((checkbox) => {
+        if (checkbox.checked) {
+          const box = checkbox.closest('.box');
+          selectedUrls.push(box.dataset.url);
+        }
+      });
+    });
+
+    // Remove selected entries from storage
+    chrome.storage.local.get(['markdownData'], (result) => {
+      const { markdownData } = result;
+      const updatedData = markdownData.filter(item => !selectedUrls.includes(item.url));
+      chrome.storage.local.set({ markdownData: updatedData }, () => {
+        if (chrome.runtime.lastError) {
+          console.error("Error deleting markdownData:", chrome.runtime.lastError);
+        } else {
+          loadMarkdownData(); // Reload the data to reflect changes
+        }
+      });
+    });
+  });
+
+  // Add event listener for the update button
+  updateButton.addEventListener('click', () => {
+    const selectedUrls = [];
+
+    // Collect URLs of selected entries
+    const dateBoxes = container.querySelectorAll('.date-box');
+    dateBoxes.forEach(dateBox => {
+      const pageCheckboxes = dateBox.querySelectorAll('.page-checkbox');
+      pageCheckboxes.forEach((checkbox) => {
+        if (checkbox.checked) {
+          const box = checkbox.closest('.box');
+          selectedUrls.push(box.dataset.url);
+        }
+      });
+    });
+
+    // Fetch and update selected entries
+    chrome.storage.local.get(['markdownData'], (result) => {
+      const { markdownData } = result;
+      selectedUrls.forEach(url => {
+        const item = markdownData.find(item => item.url === url);
+        if (item) {
+          fetchAndConvertToMarkdown(url, (newMarkdown) => {
+            const oldMarkdown = item.markdown;
+            if (newMarkdown !== oldMarkdown) {
+              showDiffModal(url, oldMarkdown, newMarkdown, (accepted) => {
+                if (accepted) {
+                  item.markdown = newMarkdown;
+                  chrome.storage.local.set({ markdownData }, () => {
+                    if (chrome.runtime.lastError) {
+                      console.error("Error updating markdownData:", chrome.runtime.lastError);
+                    } else {
+                      loadMarkdownData(); // Reload the data to reflect changes
+                    }
+                  });
+                }
+              });
+            }
+          });
+        }
+      });
+    });
+  });
+
+  function fetchAndConvertToMarkdown(url, callback) {
+    chrome.runtime.sendMessage({ command: "fetch-url", url: url }, (response) => {
+      if (response.error) {
+        console.error('Error fetching URL:', response.error);
+        return;
+      }
+      
+      const html = response.html;
+      // Inject TurndownService script
+      const script = document.createElement('script');
+      script.src = chrome.runtime.getURL('turndown.js');
+      document.head.appendChild(script);
+
+      script.onload = () => {
+        const turndownService = new TurndownService();
+        const markdown = turndownService.turndown(html);
+        callback(markdown);
+      };
+    });
+  }
+
+  // Function to show diff modal using jsdiff
+  function showDiffModal(url, oldMarkdown, newMarkdown, callback) {
+    const modal = document.createElement('div');
+    modal.className = 'diff-modal';
+
+    const diff = Diff.diffLines(oldMarkdown, newMarkdown);
+    const fragment = document.createDocumentFragment();
+
+    diff.forEach((part) => {
+      const color = part.added ? 'green' :
+        part.removed ? 'red' : 'grey';
+      const span = document.createElement('span');
+      span.style.color = color;
+      span.appendChild(document.createTextNode(part.value));
+      fragment.appendChild(span);
+    });
+
+    const diffContainer = document.createElement('div');
+    diffContainer.appendChild(fragment);
+    modal.appendChild(diffContainer);
+
+    const acceptButton = document.createElement('button');
+    acceptButton.textContent = 'Accept';
+    acceptButton.addEventListener('click', () => {
+      callback(true);
+      document.body.removeChild(modal);
+    });
+
+    const declineButton = document.createElement('button');
+    declineButton.textContent = 'Decline';
+    declineButton.addEventListener('click', () => {
+      callback(false);
+      document.body.removeChild(modal);
+    });
+
+    modal.appendChild(acceptButton);
+    modal.appendChild(declineButton);
+
+    document.body.appendChild(modal);
+  }
 });
