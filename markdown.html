@@ -6,12 +6,12 @@
   <style>
     @font-face {
       font-family: 'Atkinson Hyperlegible';
-      src: url('fonts/AtkinsonHyperlegible-Regular.ttf') format('truetype');
+      src: url('fonts/Atkinson-Hyperlegible-Regular-102.ttf') format('truetype');
       font-weight: normal;
     }
     @font-face {
       font-family: 'Atkinson Hyperlegible';
-      src: url('fonts/AtkinsonHyperlegible-Bold.ttf') format('truetype');
+      src: url('fonts/Atkinson-Hyperlegible-Bold-102.ttf') format('truetype');
       font-weight: bold;
     }
     body {
@@ -45,6 +45,19 @@
     .loading {
       color: var(--loading-color);
     }
+    .copy-button {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      padding: 8px 12px;
+      background-color: var(--button-background);
+      color: var(--button-color);
+      border: 1px solid var(--button-border);
+      cursor: pointer;
+    }
+    .copy-button:hover {
+      background-color: var(--button-hover-background);
+    }
 
     /* Light theme */
     @media (prefers-color-scheme: light) {
@@ -55,6 +68,10 @@
         --textarea-background: #ffffff;
         --textarea-color: #000000;
         --loading-color: blue;
+        --button-background: #f0f0f0;
+        --button-hover-background: #e0e0e0;
+        --button-color: #000000;
+        --button-border: #ccc;
       }
     }
 
@@ -67,11 +84,16 @@
         --textarea-background: #333;
         --textarea-color: #ffffff;
         --loading-color: lightblue;
+        --button-background: #333;
+        --button-hover-background: #444;
+        --button-color: #ffffff;
+        --button-border: #444;
       }
     }
   </style>
 </head>
 <body>
+  <button class="copy-button" id="copy-markdown-page">Copy Collection</button>
   <div class="container" id="markdown-container">
     <!-- Dynamic content will be injected here -->
   </div>

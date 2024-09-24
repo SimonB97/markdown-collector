@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   const container = document.getElementById('markdown-container');
+  const copyButton = document.getElementById('copy-markdown-page');
 
   // Track open URLs to preserve state after UI update
   let openUrls = new Set();
@@ -246,5 +247,36 @@ document.addEventListener('DOMContentLoaded', () => {
       // Return true to indicate that the response is sent asynchronously
       return true;
     }
+  });
+
+  // Add event listener for the copy button
+  copyButton.addEventListener('click', () => {
+    const selectedMarkdown = [];
+
+    // Iterate through each date group
+    const dateBoxes = container.querySelectorAll('.date-box');
+    dateBoxes.forEach(dateBox => {
+      const pageCheckboxes = dateBox.querySelectorAll('.page-checkbox');
+      pageCheckboxes.forEach((checkbox, index) => {
+        if (checkbox.checked) {
+          const box = checkbox.closest('.box');
+          const content = box.querySelector('.box-content textarea');
+          if (content) {
+            const title = box.querySelector('.box-title span').textContent;
+            selectedMarkdown.push(`<url>${box.dataset.url}</url>\n<title>${title}</title>\n${content.value}`);
+          }
+        }
+      });
+    });
+
+    const markdownText = selectedMarkdown.join('\n\n\n');
+    navigator.clipboard.writeText(markdownText).then(() => {
+      copyButton.textContent = '✔ Copied';
+      setTimeout(() => {
+        copyButton.textContent = 'Copy Collection';
+      }, 2000); // Reset button text after 2 seconds
+    }).catch((err) => {
+      console.error('Error copying to clipboard:', err);
+    });
   });
 });

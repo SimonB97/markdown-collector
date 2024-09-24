@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // Display checkmark on the button
           copyMarkdownButton.textContent = '✔ Copied';
           setTimeout(() => {
-            copyMarkdownButton.textContent = 'Copy Markdown';
+            copyMarkdownButton.textContent = 'Copy Collection';
           }, 2000); // Reset button text after 2 seconds
         } else {
           alert('Failed to copy markdown.');
