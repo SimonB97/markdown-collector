@@ -42,7 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
           dateHeader.className = 'date-header';
           dateHeader.textContent = date;
           dateHeader.style.color = 'orange';
-          dateHeader.style.fontSize = '18px';
           dateHeader.style.paddingLeft = '11px';
           dateHeader.style.cursor = 'pointer';
 
@@ -122,6 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
               const textarea = document.createElement('textarea');
               textarea.value = item.markdown;
+              textarea.style.height = '50vh';
 
               // Change event listener from 'input' to 'blur'
               textarea.addEventListener('blur', () => {
@@ -225,10 +225,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const pageCheckboxes = dateBox.querySelectorAll('.page-checkbox');
         pageCheckboxes.forEach((checkbox, index) => {
           if (checkbox.checked) {
-            const box = checkbox.parentElement;
+            const box = checkbox.closest('.box');
             const content = box.querySelector('.box-content textarea');
             if (content) {
-              const title = box.querySelector('.box-title').textContent;
+              const title = box.querySelector('.box-title span').textContent;
               selectedMarkdown.push(`<url>${box.dataset.url}</url>\n<title>${title}</title>\n${content.value}`);
             }
           }

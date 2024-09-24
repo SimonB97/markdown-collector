@@ -8,13 +8,13 @@ document.addEventListener('DOMContentLoaded', () => {
   chrome.storage.local.get(['isListening'], (result) => {
     const isListening = result.isListening || false;
     toggleSwitch.checked = isListening;
-    statusMessage.textContent = isListening ? '🟢 Listening...' : '🔴 Not listening.';
+    statusMessage.textContent = isListening ? '🟢 Listening...' : '🔴';
   });
 
   toggleSwitch.addEventListener('change', () => {
     chrome.runtime.sendMessage({ command: 'toggle-listening' }, (response) => {
       if (response && response.status) {
-        statusMessage.textContent = response.status === 'Listening started' ? '🟢 Listening...' : '🔴 Not listening.';
+        statusMessage.textContent = response.status === 'Listening started' ? '🟢 Listening...' : '🔴';
       }
     });
   });

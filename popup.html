@@ -4,8 +4,18 @@
   <meta charset="UTF-8">
   <title>URL to Markdown Collector</title>
   <style>
+    @font-face {
+      font-family: 'Atkinson Hyperlegible';
+      src: url('fonts/Atkinson-Hyperlegible-Regular-102.ttf') format('truetype');
+      font-weight: normal;
+    }
+    @font-face {
+      font-family: 'Atkinson Hyperlegible';
+      src: url('fonts/Atkinson-Hyperlegible-Bold-102.ttf') format('truetype');
+      font-weight: bold;
+    }
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Atkinson Hyperlegible', Arial, sans-serif;
       width: 200px;
       padding: 10px;
       background-color: var(--background-color);
@@ -22,6 +32,10 @@
       background-color: var(--button-background);
       color: var(--button-color);
       border: 1px solid var(--button-border);
+      font-family: 'Atkinson Hyperlegible', Arial, sans-serif;
+    }
+    button:hover {
+      background-color: var(--button-hover-background);
     }
     .switch {
       position: relative;
@@ -68,6 +82,7 @@
         --background-color: #ffffff;
         --text-color: #000000;
         --button-background: #f0f0f0;
+        --button-hover-background: #e0e0e0;
         --button-color: #000000;
         --button-border: #ccc;
       }
@@ -79,6 +94,7 @@
         --background-color: #121212;
         --text-color: #ffffff;
         --button-background: #333;
+        --button-hover-background: #444;
         --button-color: #ffffff;
         --button-border: #444;
       }
@@ -101,8 +117,8 @@
     <div id="status-message">Not listening.</div>
   </div>
   <div class="button-container">
-    <button id="open-markdown">Open Markdown Page</button>
-    <button id="copy-markdown">Copy Markdown</button>
+    <button id="open-markdown">Open Collection</button>
+    <button id="copy-markdown">Copy Collection</button>
   </div>
   <script src="popup.js"></script>
 </body>

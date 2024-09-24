@@ -59,5 +59,9 @@
       "matches": ["<all_urls>"],
       "js": ["content.js"]
     }
+  ],
+  "web_accessible_resources": [
+    "fonts/Atkinson-Hyperlegible-Regular-102.ttf",
+    "fonts/Atkinson-Hyperlegible-Bold-102.ttf"
   ]
 }
