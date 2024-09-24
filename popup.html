@@ -83,18 +83,27 @@
         --button-border: #444;
       }
     }
+    .switch-container {
+      display: flex;
+      align-items: center;
+    }
+    .switch-container #status-message {
+      margin-left: 10px;
+    }
   </style>
 </head>
 <body>
-  <label class="switch">
-    <input type="checkbox" id="toggle-listening">
-    <span class="slider"></span>
-  </label>
+  <div class="switch-container">
+    <label class="switch">
+      <input type="checkbox" id="toggle-listening">
+      <span class="slider"></span>
+    </label>
+    <div id="status-message">Not listening.</div>
+  </div>
   <div class="button-container">
     <button id="open-markdown">Open Markdown Page</button>
     <button id="copy-markdown">Copy Markdown</button>
   </div>
-  <div id="status-message">Not listening.</div>
   <script src="popup.js"></script>
 </body>
 </html>
