@@ -81,6 +81,7 @@
       :root {
         --background-color: #ffffff;
         --text-color: #000000;
+        --text-color-light: #b4b4b4;
         --button-background: #f0f0f0;
         --button-hover-background: #e0e0e0;
         --button-color: #000000;
@@ -93,6 +94,7 @@
       :root {
         --background-color: #121212;
         --text-color: #ffffff;
+        --text-color-light: #b4b4b4;
         --button-background: #333;
         --button-hover-background: #444;
         --button-color: #ffffff;
@@ -105,6 +107,12 @@
     }
     .switch-container #status-message {
       margin-left: 10px;
+      color: var(--text-color);
+    }
+    .info-container {
+      margin-top: 20px;
+      font-size: 14px;
+      color: var(--text-color-light);
     }
   </style>
 </head>
@@ -114,11 +122,22 @@
       <input type="checkbox" id="toggle-listening">
       <span class="slider"></span>
     </label>
-    <div id="status-message">Not listening.</div>
+    <div id="status-message"></div>
   </div>
   <div class="button-container">
     <button id="open-markdown">Open Collection</button>
     <button id="copy-markdown">Copy Collection</button>
+  </div>
+  <div class="info-container">
+    <p>
+      <strong>Instructions:</strong>
+      <div>
+        - Toggle listening to URLs on and off.<br>
+        - Save a page your currently viewing by pressing "Ctrl+Alt+S".<br>
+        - Open the Markdown collection page to view and manage your saved URLs.<br>
+        - Copy your entire collection (or only selected pages) to the clipboard with a single click.
+      </div>
+    </p>
   </div>
   <script src="popup.js"></script>
 </body>

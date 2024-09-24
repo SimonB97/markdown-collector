@@ -8,8 +8,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     chrome.storage.local.set({ isListening }, () => {
       if (chrome.runtime.lastError) {
         console.error("Error setting isListening:", chrome.runtime.lastError);
+        sendResponse({ status: "error", message: chrome.runtime.lastError });
+      } else {
+        sendResponse({ status: "success", isListening });
       }
-      sendResponse({ status: isListening ? "Listening started" : "Listening stopped" });
     });
     return true; // Indicates that the response is sent asynchronously
   } else if (request.command === "save-url" && isListening) {

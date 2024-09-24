@@ -8,13 +8,20 @@ document.addEventListener('DOMContentLoaded', () => {
   chrome.storage.local.get(['isListening'], (result) => {
     const isListening = result.isListening || false;
     toggleSwitch.checked = isListening;
-    statusMessage.textContent = isListening ? '🟢 Listening...' : '🔴';
+    statusMessage.textContent = isListening ? 'Listening...' : 'Paused';
+    statusMessage.style.color = isListening ? 'green' : 'red';
   });
 
   toggleSwitch.addEventListener('change', () => {
     chrome.runtime.sendMessage({ command: 'toggle-listening' }, (response) => {
-      if (response && response.status) {
-        statusMessage.textContent = response.status === 'Listening started' ? '🟢 Listening...' : '🔴';
+      if (response && response.status === 'success') {
+        const isListening = response.isListening;
+        statusMessage.textContent = isListening ? 'Listening...' : 'Paused';
+        statusMessage.style.color = isListening ? 'green' : 'red';
+      } else {
+        console.error('Failed to toggle listening:', response.message);
+        // Revert the toggle switch state if there was an error
+        toggleSwitch.checked = !toggleSwitch.checked;
       }
     });
   });
