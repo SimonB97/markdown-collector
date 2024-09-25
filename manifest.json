@@ -32,21 +32,15 @@
   "commands": {
     "save-url": {
       "suggested_key": {
-        "default": "Ctrl+Alt+S"
+        "default": "Alt+I"
       },
       "description": "Save current URL and convert to Markdown"
     },
     "open-markdown-page": {
       "suggested_key": {
-        "default": "Ctrl+Alt+M"
+        "default": "Alt+C"
       },
       "description": "Open Markdown collection page"
-    },
-    "copy-markdown": {
-      "suggested_key": {
-        "default": "Ctrl+Alt+C"
-      },
-      "description": "Copy concatenated Markdown to clipboard"
     }
   },
   "content_scripts": [

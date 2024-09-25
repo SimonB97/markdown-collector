@@ -20,48 +20,78 @@
       color: var(--text-color);
     }
     .container {
-      width: 93%;
+      width: 97%;
       margin: auto;
-      padding-top: 15px;
+      padding-top: 20px;
     }
     .box {
-      border: 1px solid var(--border-color);
+      border-top: 1px solid var(--border-color);
       padding: 10px;
       margin: 10px 0;
+      margin-left: 16px;
     }
     .box-title {
-      font-weight: bold;
-      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px;
+      transition: background-color 0.2s ease;
+    }
+    .box-title > div {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .box-title:hover,
+    .date-header:hover {
+      background-color: var(--box-title-hover-background);
+    }
+    .date-header {
+      transition: background-color 0.2s ease;
     }
     .box-content {
       display: none;
-      margin-top: 10px;
+      /* margin-top: 10px; */
     }
     .box-content textarea {
-      width: 100%;
+      width: 99%;
       height: 200px;
       background-color: var(--textarea-background);
       color: var(--textarea-color);
+      display: block;
+      margin: 0 auto;
     }
     .loading {
       color: var(--loading-color);
     }
     .copy-button {
+      right: 410px;
+      background-color: var(--button-background);
+    }
+    .update-button {
+      right: 270px;
+      background-color: #1a5f7a; /* Dark blue tone */
+    }
+    .delete-button {
+      right: 130px;
+      background-color: #8b0000; /* Dark red tone */
+    }
+    .action-button {
       position: fixed;
       top: 10px;
-      right: 10px;
       padding: 8px 12px;
-      background-color: var(--button-background);
       color: var(--button-color);
       border: 1px solid var(--button-border);
       cursor: pointer;
       font-family: 'Atkinson Hyperlegible', Arial, sans-serif;
-      width: 130px; /* Fixed width to prevent resizing */
-      height: 40px; /* Fixed height to prevent resizing */
-      text-align: center; /* Center the text */
+      font-size: 16px;
+      width: 120px;
+      height: 40px;
+      text-align: center;
     }
-    .copy-button:hover {
-      background-color: var(--button-hover-background);
+    .action-button:hover {
+      filter: brightness(110%);
     }
 
     /* Light theme */
@@ -77,6 +107,7 @@
         --button-hover-background: #e0e0e0;
         --button-color: #000000;
         --button-border: #ccc;
+        --box-title-hover-background: #f0f0f0;
       }
     }
 
@@ -93,6 +124,7 @@
         --button-hover-background: #444;
         --button-color: #ffffff;
         --button-border: #444;
+        --box-title-hover-background: #1c1c1c;
       }
     }
 
@@ -122,9 +154,9 @@
   </style>
 </head>
 <body>
-  <button class="copy-button" id="copy-markdown-page">Copy Collection</button>
-  <button id="delete-markdown-page">Delete Selected</button>
-  <button id="update-markdown-page">Update Selected</button>
+  <button class="action-button copy-button" id="copy-markdown-page">⎘ Copy</button>
+  <button class="action-button update-button" id="update-markdown-page">↻ Update</button>
+  <button class="action-button delete-button" id="delete-markdown-page">✕ Delete</button>
   <div class="container" id="markdown-container">
     <!-- Dynamic content will be injected here -->
   </div>

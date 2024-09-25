@@ -8,166 +8,211 @@ document.addEventListener('DOMContentLoaded', () => {
   let openUrls = new Set();
 
   function loadMarkdownData() {
-    chrome.storage.local.get(['markdownData'], (result) => {
+    browser.storage.local.get(['markdownData']).then((result) => {
       console.log("Loaded markdown data:", result.markdownData);
-      const { markdownData } = result;
+      let { markdownData } = result;
+
+      // If there's no data, inject mock data for testing
+      if (!markdownData || markdownData.length === 0) {
+        markdownData = generateMockData();
+        browser.storage.local.set({ markdownData }).then(() => {
+          renderMarkdownData(markdownData);
+        }).catch((error) => {
+          console.error("Error setting mock markdownData:", error);
+        });
+      } else {
+        renderMarkdownData(markdownData);
+      }
+    }).catch((error) => {
+      console.error("Error getting markdownData:", error);
+    });
+  }
+
+  function renderMarkdownData(markdownData) {
+    // Clear the container before adding new elements
+    container.innerHTML = '';
+
+    if (markdownData && markdownData.length > 0) {
+      const groupedData = groupByDate(markdownData);
       
-      // Clear the container before adding new elements
-      container.innerHTML = '';
+      // Sort date groups from newest to oldest using ISO date strings
+      const dateGroups = Object.keys(groupedData).sort((a, b) => {
+        if (a === 'Unknown Date') return 1; // Push 'Unknown Date' to the end
+        if (b === 'Unknown Date') return -1;
+        return b.localeCompare(a); // Descending order
+      });
 
-      if (markdownData && markdownData.length > 0) {
-        const groupedData = groupByDate(markdownData);
-        const dateGroups = Object.keys(groupedData);
+      // Add "Select All" checkbox at the top if there are multiple date groups
+      if (dateGroups.length > 1) {
+        const selectAllBox = document.createElement('div');
+        selectAllBox.className = 'select-all-box';
 
-        // Add "Select All" checkbox at the top if there are multiple date groups
-        if (dateGroups.length > 1) {
-          const selectAllBox = document.createElement('div');
-          selectAllBox.className = 'select-all-box';
+        const selectAllCheckbox = document.createElement('input');
+        selectAllCheckbox.type = 'checkbox';
+        selectAllCheckbox.className = 'select-all-checkbox';
+        selectAllBox.appendChild(selectAllCheckbox);
 
-          const selectAllCheckbox = document.createElement('input');
-          selectAllCheckbox.type = 'checkbox';
-          selectAllCheckbox.className = 'select-all-checkbox';
-          selectAllBox.appendChild(selectAllCheckbox);
+        const selectAllLabel = document.createElement('label');
+        selectAllLabel.textContent = 'Select All';
+        selectAllLabel.style.color = 'lightgray';
+        selectAllBox.appendChild(selectAllLabel);
 
-          const selectAllLabel = document.createElement('label');
-          selectAllLabel.textContent = 'Select All';
-          selectAllBox.appendChild(selectAllLabel);
+        container.appendChild(selectAllBox);
 
-          container.appendChild(selectAllBox);
+        selectAllCheckbox.addEventListener('change', () => {
+          const allCheckboxes = container.querySelectorAll('.page-checkbox, .date-checkbox');
+          allCheckboxes.forEach(checkbox => checkbox.checked = selectAllCheckbox.checked);
+        });
+      }
 
-          selectAllCheckbox.addEventListener('change', () => {
-            const allCheckboxes = container.querySelectorAll('.page-checkbox, .date-checkbox');
-            allCheckboxes.forEach(checkbox => checkbox.checked = selectAllCheckbox.checked);
-          });
-        }
+      dateGroups.forEach(date => {
+        const dateBox = document.createElement('div');
+        dateBox.className = 'date-box';
 
-        dateGroups.forEach(date => {
-          const dateBox = document.createElement('div');
-          dateBox.className = 'date-box';
+        const dateHeader = document.createElement('div');
+        dateHeader.className = 'date-header';
+        dateHeader.textContent = date; // Display date in ISO format
+        dateHeader.style.color = 'orange';
+        dateHeader.style.paddingLeft = '11px';
+        dateHeader.style.cursor = 'pointer';
 
-          const dateHeader = document.createElement('div');
-          dateHeader.className = 'date-header';
-          dateHeader.textContent = date;
-          dateHeader.style.color = 'orange';
-          dateHeader.style.paddingLeft = '11px';
-          dateHeader.style.cursor = 'pointer';
+        const dateCheckbox = document.createElement('input');
+        dateCheckbox.type = 'checkbox';
+        dateCheckbox.className = 'date-checkbox';
+        dateCheckbox.style.marginRight = '10px'; // Add space between checkbox and date header
+        dateHeader.prepend(dateCheckbox);
 
-          const dateCheckbox = document.createElement('input');
-          dateCheckbox.type = 'checkbox';
-          dateCheckbox.className = 'date-checkbox';
-          dateCheckbox.style.marginRight = '10px'; // Add space between checkbox and date header
-          dateHeader.prepend(dateCheckbox);
+        // Prevent checkbox click from toggling the date group
+        dateCheckbox.addEventListener('click', (event) => {
+          event.stopPropagation();
+        });
 
-          // Prevent checkbox click from toggling the date group
-          dateCheckbox.addEventListener('click', (event) => {
+        const dateContent = document.createElement('div');
+        dateContent.className = 'date-content';
+        dateContent.style.display = date === getTodayDate() ? 'block' : 'none'; // Only current date expanded by default
+
+        dateHeader.addEventListener('click', () => {
+          dateContent.style.display = dateContent.style.display === 'none' ? 'block' : 'none';
+        });
+
+        dateCheckbox.addEventListener('change', () => {
+          const checkboxes = dateContent.querySelectorAll('.page-checkbox');
+          checkboxes.forEach(checkbox => checkbox.checked = dateCheckbox.checked);
+        });
+
+        groupedData[date].forEach((item, index) => {
+          const box = document.createElement('div');
+          box.className = 'box';
+          box.dataset.url = item.url;
+          box.style.padding = '0';
+
+          const title = document.createElement('div');
+          title.className = 'box-title';
+          title.style.display = 'flex';
+          title.style.justifyContent = 'space-between';
+          title.style.alignItems = 'center';
+
+          const pageCheckbox = document.createElement('input');
+          pageCheckbox.type = 'checkbox';
+          pageCheckbox.className = 'page-checkbox';
+          pageCheckbox.style.marginRight = '10px';
+          
+          const titleContent = document.createElement('div');
+          titleContent.style.flex = '1';
+          titleContent.style.overflow = 'hidden';
+          titleContent.style.textOverflow = 'ellipsis';
+          titleContent.style.whiteSpace = 'nowrap';
+          titleContent.style.cursor = 'pointer';
+
+          const titleText = document.createElement('span');
+          titleText.textContent = getCoreDomain(item.url);
+          titleText.style.fontSize = '20px';
+          titleText.style.color = 'lightgray';
+
+          const path = document.createElement('span');
+          path.style.color = 'gray';
+          path.style.fontSize = '20px';
+          path.textContent = ` ${new URL(item.url).pathname}`;
+          titleText.appendChild(path);
+
+          titleContent.appendChild(titleText);
+
+          const dateTimeText = document.createElement('span');
+          const savedDateTime = new Date(item.savedAt);
+          dateTimeText.textContent = `${savedDateTime.toLocaleTimeString()}`;
+          dateTimeText.style.color = 'gray';
+          dateTimeText.style.fontSize = '16px';
+          dateTimeText.style.marginLeft = '10px';
+          dateTimeText.style.flexShrink = '0';
+
+          title.appendChild(pageCheckbox);
+          title.appendChild(titleContent);
+          title.appendChild(dateTimeText);
+
+          // Prevent checkbox click from toggling the content
+          pageCheckbox.addEventListener('click', (event) => {
             event.stopPropagation();
           });
 
-          const dateContent = document.createElement('div');
-          dateContent.className = 'date-content';
-          dateContent.style.display = date === getTodayDate() ? 'block' : 'none'; // Only current date expanded by default
-
-          dateHeader.addEventListener('click', () => {
-            dateContent.style.display = dateContent.style.display === 'none' ? 'block' : 'none';
-          });
-
-          dateCheckbox.addEventListener('change', () => {
-            const checkboxes = dateContent.querySelectorAll('.page-checkbox');
-            checkboxes.forEach(checkbox => checkbox.checked = dateCheckbox.checked);
-          });
-
-          groupedData[date].forEach((item, index) => {
-            const box = document.createElement('div');
-            box.className = 'box';
-            box.dataset.url = item.url; // Add data attribute for tracking
-
-            const title = document.createElement('div');
-            title.className = 'box-title';
-
-            const pageCheckbox = document.createElement('input');
-            pageCheckbox.type = 'checkbox';
-            pageCheckbox.className = 'page-checkbox';
-            pageCheckbox.style.marginRight = '10px'; // Add some space between checkbox and title
-            title.prepend(pageCheckbox);
-
-            // Prevent checkbox click from toggling the content
-            pageCheckbox.addEventListener('click', (event) => {
-              event.stopPropagation();
-            });
-
-            const titleText = document.createElement('span');
-            titleText.textContent = getCoreDomain(item.url);
-
-            const path = document.createElement('span');
-            path.style.color = 'gray';
-            path.textContent = ` ${new URL(item.url).pathname}`;
-            titleText.appendChild(path);
-
-            title.appendChild(titleText);
-
-            title.addEventListener('click', () => {
-              const content = box.querySelector('.box-content');
-              if (content.style.display === 'none' || content.style.display === '') {
-                content.style.display = 'block';
-                openUrls.add(item.url); // Mark as open
-              } else {
-                content.style.display = 'none';
-                openUrls.delete(item.url); // Mark as closed
-              }
-            });
-
-            const content = document.createElement('div');
-            content.className = 'box-content';
-            content.style.display = 'none'; // Ensure initial state is hidden
-
-            if (item.isLoading) {
-              const loading = document.createElement('div');
-              loading.className = 'loading';
-              loading.textContent = 'Loading...';
-              content.appendChild(loading);
-            } else {
-              const textarea = document.createElement('textarea');
-              textarea.value = item.markdown;
-              textarea.style.height = '50vh';
-
-              // Change event listener from 'input' to 'blur'
-              textarea.addEventListener('blur', () => {
-                markdownData[index].markdown = textarea.value;
-                chrome.storage.local.set({ markdownData }, () => {
-                  if (chrome.runtime.lastError) {
-                    console.error("Error updating markdownData:", chrome.runtime.lastError);
-                  }
-                  // Do not reload or alter display state
-                });
-              });
-
-              content.appendChild(textarea);
-            }
-
-            box.appendChild(title);
-            box.appendChild(content);
-            dateContent.appendChild(box);
-
-            // Restore open state if previously open
-            if (openUrls.has(item.url)) {
+          title.addEventListener('click', () => {
+            const content = box.querySelector('.box-content');
+            if (content.style.display === 'none' || content.style.display === '') {
               content.style.display = 'block';
+              openUrls.add(item.url); // Mark as open
+            } else {
+              content.style.display = 'none';
+              openUrls.delete(item.url); // Mark as closed
             }
           });
 
-          dateBox.appendChild(dateHeader);
-          dateBox.appendChild(dateContent);
-          container.appendChild(dateBox);
+          const content = document.createElement('div');
+          content.className = 'box-content';
+          content.style.display = 'none'; // Ensure initial state is hidden
+
+          if (item.isLoading) {
+            const loading = document.createElement('div');
+            loading.className = 'loading';
+            loading.textContent = 'Loading...';
+            content.appendChild(loading);
+          } else {
+            const textarea = document.createElement('textarea');
+            textarea.value = item.markdown;
+            textarea.style.height = '50vh';
+
+            // Change event listener from 'input' to 'blur'
+            textarea.addEventListener('blur', () => {
+              markdownData[index].markdown = textarea.value;
+              browser.storage.local.set({ markdownData }).catch((error) => {
+                console.error("Error updating markdownData:", error);
+              });
+            });
+
+            content.appendChild(textarea);
+          }
+
+          box.appendChild(title);
+          box.appendChild(content);
+          dateContent.appendChild(box);
+
+          // Restore open state if previously open
+          if (openUrls.has(item.url)) {
+            content.style.display = 'block';
+          }
         });
-      } else {
-        container.textContent = 'No markdown data available.';
-      }
-    });
+
+        dateBox.appendChild(dateHeader);
+        dateBox.appendChild(dateContent);
+        container.appendChild(dateBox);
+      });
+    } else {
+      container.textContent = 'No markdown data available.';
+    }
   }
 
   loadMarkdownData();
 
   // Listen for updates to markdownData without reloading the page
-  chrome.storage.onChanged.addListener((changes, area) => {
+  browser.storage.onChanged.addListener((changes, area) => {
     if (area === 'local' && changes.markdownData) {
       console.log("Markdown data changed:", changes.markdownData.newValue);
       // Reload the markdown data
@@ -181,10 +226,11 @@ document.addEventListener('DOMContentLoaded', () => {
    * @returns {Object} - The grouped markdown data.
    */
   function groupByDate(markdownData) {
-    return markdownData.reduce((acc, item) => {
+    const grouped = markdownData.reduce((acc, item) => {
       let date;
       try {
-        date = new Date(item.savedAt).toLocaleDateString();
+        // Use ISO date format for consistency
+        date = new Date(item.savedAt).toISOString().slice(0, 10); // "YYYY-MM-DD"
         if (isNaN(new Date(item.savedAt))) {
           throw new Error("Invalid Date");
         }
@@ -199,6 +245,13 @@ document.addEventListener('DOMContentLoaded', () => {
       acc[date].push(item);
       return acc;
     }, {});
+
+    // Sort entries within each date group by savedAt in descending order
+    Object.keys(grouped).forEach(date => {
+      grouped[date].sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+    });
+
+    return grouped;
   }
 
   /**
@@ -213,17 +266,18 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /**
-   * Gets today's date in locale string format.
-   * @returns {string} - Today's date.
+   * Retrieves today's date in ISO format (YYYY-MM-DD).
+   * @returns {string} - Today's date as a string.
    */
   function getTodayDate() {
-    return new Date().toLocaleDateString();
+    const today = new Date();
+    return today.toISOString().slice(0, 10); // "YYYY-MM-DD"
   }
 
   /**
    * Handles incoming messages for copying selected markdown.
    */
-  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.command === 'copy-selected-markdown') {
       const selectedMarkdown = [];
 
@@ -280,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
     navigator.clipboard.writeText(markdownText).then(() => {
       copyButton.textContent = '✔ Copied';
       setTimeout(() => {
-        copyButton.textContent = 'Copy Collection';
+        copyButton.textContent = '⎘ Copy';
       }, 2000); // Reset button text after 2 seconds
     }).catch((err) => {
       console.error('Error copying to clipboard:', err);
@@ -304,16 +358,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Remove selected entries from storage
-    chrome.storage.local.get(['markdownData'], (result) => {
+    browser.storage.local.get(['markdownData']).then((result) => {
       const { markdownData } = result;
       const updatedData = markdownData.filter(item => !selectedUrls.includes(item.url));
-      chrome.storage.local.set({ markdownData: updatedData }, () => {
-        if (chrome.runtime.lastError) {
-          console.error("Error deleting markdownData:", chrome.runtime.lastError);
-        } else {
-          loadMarkdownData(); // Reload the data to reflect changes
-        }
+      browser.storage.local.set({ markdownData: updatedData }).then(() => {
+        loadMarkdownData(); // Reload the data to reflect changes
+      }).catch((error) => {
+        console.error("Error deleting markdownData:", error);
       });
+    }).catch((error) => {
+      console.error("Error getting markdownData:", error);
     });
   });
 
@@ -334,7 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Fetch and update selected entries
-    chrome.storage.local.get(['markdownData'], (result) => {
+    browser.storage.local.get(['markdownData']).then((result) => {
       const { markdownData } = result;
       selectedUrls.forEach(url => {
         const item = markdownData.find(item => item.url === url);
@@ -345,12 +399,10 @@ document.addEventListener('DOMContentLoaded', () => {
               showDiffModal(url, oldMarkdown, newMarkdown, (accepted) => {
                 if (accepted) {
                   item.markdown = newMarkdown;
-                  chrome.storage.local.set({ markdownData }, () => {
-                    if (chrome.runtime.lastError) {
-                      console.error("Error updating markdownData:", chrome.runtime.lastError);
-                    } else {
-                      loadMarkdownData(); // Reload the data to reflect changes
-                    }
+                  browser.storage.local.set({ markdownData }).then(() => {
+                    loadMarkdownData(); // Reload the data to reflect changes
+                  }).catch((error) => {
+                    console.error("Error updating markdownData:", error);
                   });
                 }
               });
@@ -358,11 +410,13 @@ document.addEventListener('DOMContentLoaded', () => {
           });
         }
       });
+    }).catch((error) => {
+      console.error("Error getting markdownData:", error);
     });
   });
 
   function fetchAndConvertToMarkdown(url, callback) {
-    chrome.runtime.sendMessage({ command: "fetch-url", url: url }, (response) => {
+    browser.runtime.sendMessage({ command: "fetch-url", url: url }).then((response) => {
       if (response.error) {
         console.error('Error fetching URL:', response.error);
         return;
@@ -371,7 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const html = response.html;
       // Inject TurndownService script
       const script = document.createElement('script');
-      script.src = chrome.runtime.getURL('turndown.js');
+      script.src = browser.runtime.getURL('turndown.js');
       document.head.appendChild(script);
 
       script.onload = () => {
@@ -379,6 +433,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const markdown = turndownService.turndown(html);
         callback(markdown);
       };
+    }).catch((error) => {
+      console.error('Error sending message to fetch URL:', error);
     });
   }
 
@@ -421,5 +477,45 @@ document.addEventListener('DOMContentLoaded', () => {
     modal.appendChild(declineButton);
 
     document.body.appendChild(modal);
+  }
+
+  /**
+   * Generates mock markdown data for testing purposes.
+   * @returns {Array} - An array of mock markdown data objects.
+   */
+  function generateMockData() {
+    const now = new Date();
+    const mockData = [
+      {
+        url: "https://example.com/page1",
+        title: "Example Page 1",
+        markdown: "## Example Markdown 1",
+        isLoading: false,
+        savedAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString() // 2 days ago
+      },
+      {
+        url: "https://example.net/page4",
+        title: "Example Page 4",
+        markdown: "## Example Markdown 4",
+        isLoading: false,
+        savedAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString() // 2 days ago
+      },
+      {
+        url: "https://example.com/page2",
+        title: "Example Page 2",
+        markdown: "## Example Markdown 2",
+        isLoading: false,
+        savedAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000).toISOString() // 1 day ago
+      },
+      {
+        url: "https://example.com/page3",
+        title: "Example Page 3",
+        markdown: "## Example Markdown 3",
+        isLoading: false,
+        savedAt: now.toISOString() // Today
+      },
+    ];
+
+    return mockData;
   }
 });
