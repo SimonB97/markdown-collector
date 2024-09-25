@@ -18,36 +18,32 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// Function to perform fetch using XMLHttpRequest
+// Function to perform fetch using Fetch API
 function performFetch(url, sendResponse) {
   console.log(`Performing fetch for URL: ${url}`);
-  const xhr = new XMLHttpRequest();
-  xhr.open("GET", url, true);
-  xhr.onreadystatechange = function () {
-    if (xhr.readyState === XMLHttpRequest.DONE) {
-      if (xhr.status === 200) {
-        console.log(`Fetch successful for URL: ${url}`);
-        sendResponse({ html: xhr.responseText });
-      } else {
-        console.error(`Error fetching URL (${url}):`, xhr.statusText);
-        sendResponse({ error: xhr.statusText });
-      }
-    }
-  };
-  xhr.onerror = function () {
-    console.error('Network Error while fetching URL.');
-    sendResponse({ error: 'Network Error' });
-  };
-  xhr.send();
+  
+  browser.tabs.create({ url: url, active: false }, (tab) => {
+    browser.tabs.executeScript(tab.id, { file: "fetchContent.js" }, () => {
+      browser.tabs.sendMessage(tab.id, { command: "getPageContent" }, (response) => {
+        browser.tabs.remove(tab.id);
+        if (response && response.html) {
+          sendResponse({ html: response.html });
+        } else {
+          sendResponse({ error: "Failed to fetch content" });
+        }
+      });
+    });
+  });
+
+  return true; // Indicates that the response is sent asynchronously
 }
 
 chrome.commands.onCommand.addListener((command) => {
   console.log("Command received:", command);
   if (command === "save-url") {
     saveCurrentTabUrl();
-  } else if (command === "copy-markdown") {
-    // Notify popup to handle copy
-    // Alternatively, implement copy here if possible
+  } else if (command === "open-markdown-page") {
+    openMarkdownPage();
   }
 });
 
@@ -120,9 +116,26 @@ function updateMarkdownData(tabId, markdown) {
 }
 
 function openMarkdownPage() {
-  chrome.tabs.create({ url: chrome.runtime.getURL("markdown.html") }, (tab) => {
-    if (chrome.runtime.lastError) {
-      console.error("Error opening markdown page:", chrome.runtime.lastError);
+  const markdownUrl = chrome.runtime.getURL("markdown.html");
+
+  // First, check if the page is already open
+  chrome.tabs.query({}, (tabs) => {
+    const existingTab = tabs.find(tab => tab.url === markdownUrl);
+    
+    if (existingTab) {
+      // If the tab exists, switch to it
+      chrome.tabs.update(existingTab.id, { active: true }, (updatedTab) => {
+        chrome.windows.update(updatedTab.windowId, { focused: true });
+      });
+    } else {
+      // If the tab doesn't exist, create a new one
+      chrome.tabs.create({ url: markdownUrl }, (tab) => {
+        if (chrome.runtime.lastError) {
+          console.error("Error opening markdown page:", chrome.runtime.lastError);
+        } else {
+          console.log("Markdown page opened successfully");
+        }
+      });
     }
   });
 }

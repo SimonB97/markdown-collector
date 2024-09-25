@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Update initial button labels
   openMarkdownButton.innerHTML = '<span style="font-size: 2em;">&#8599;</span><br>Open Collection';
-  copyMarkdownButton.innerHTML = '<span style="font-size: 2em;">&#9112;</span><br>Copy Collection';
+  copyMarkdownButton.innerHTML = '<span style="font-size: 2em;">&#128203;</span><br>Copy as Markdown';
 
   openMarkdownButton.addEventListener('click', () => {
     chrome.runtime.sendMessage({ command: 'open-markdown-page' }, (response) => {
@@ -14,31 +14,40 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   copyMarkdownButton.addEventListener('click', () => {
-    chrome.tabs.query({ url: chrome.runtime.getURL("markdown.html") }, (tabs) => {
-      if (tabs.length === 0) {
-        showMessage('Markdown page is not open.', 'warning');
-        return;
-      }
-
-      chrome.tabs.sendMessage(tabs[0].id, { command: 'copy-selected-markdown' }, (response) => {
-        console.log('Response from markdown page:', response); // Debug log
-        if (response && response.status === 'success') {
-          if (response.copiedEntries > 0) {
-            showMessage(`Copied ${response.copiedEntries} entries`, 'success');
-            // Display checkmark on the button
-            copyMarkdownButton.innerHTML = '&#10003; Copied';
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const currentTab = tabs[0];
+      if (currentTab) {
+        chrome.runtime.sendMessage({ command: 'save-url' }, (response) => {
+          if (response && response.status === "URL saved and conversion started") {
+            // Wait for a short time to allow the conversion to complete
             setTimeout(() => {
-              copyMarkdownButton.innerHTML = '<span style="font-size: 2em;">&#9112;</span><br>Copy Collection';
-            }, 2000); // Reset button text after 2 seconds
+              chrome.storage.local.get(['markdownData'], (result) => {
+                const markdownData = result.markdownData || [];
+                const currentPageData = markdownData.find(item => item.url === currentTab.url);
+                if (currentPageData && currentPageData.markdown) {
+                  const markdownText = `<url>${currentPageData.url}</url>\n<title>${currentPageData.title}</title>\n${currentPageData.markdown}`;
+                  navigator.clipboard.writeText(markdownText).then(() => {
+                    showMessage('Page copied as Markdown', 'success');
+                    copyMarkdownButton.innerHTML = '&#10003; Copied';
+                    setTimeout(() => {
+                      copyMarkdownButton.innerHTML = '<span style="font-size: 2em;">&#128203;</span><br>Copy as Markdown';
+                    }, 2000); // Reset button text after 2 seconds
+                  }).catch((err) => {
+                    console.error('Error copying to clipboard:', err);
+                    showMessage('Failed to copy to clipboard', 'error');
+                  });
+                } else {
+                  showMessage('Failed to get Markdown data', 'error');
+                }
+              });
+            }, 500); // Wait for 500 milliseconds before attempting to copy
           } else {
-            showMessage('No entries selected or copied.', 'warning');
+            showMessage('Failed to save and convert page', 'error');
           }
-        } else if (response && response.status === 'error') {
-          showMessage(response.message || 'Failed to copy markdown.', 'error');
-        } else {
-          showMessage('Unexpected response from markdown page.', 'error');
-        }
-      });
+        });
+      } else {
+        showMessage('No active tab found', 'error');
+      }
     });
   });
 

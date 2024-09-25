@@ -11,8 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     browser.storage.local.get(['markdownData']).then((result) => {
       console.log("Loaded markdown data:", result.markdownData);
       let { markdownData } = result;
-
-      // If there's no data, inject mock data for testing
+  
       if (!markdownData || markdownData.length === 0) {
         markdownData = generateMockData();
         browser.storage.local.set({ markdownData }).then(() => {
@@ -53,15 +52,22 @@ document.addEventListener('DOMContentLoaded', () => {
         selectAllBox.appendChild(selectAllCheckbox);
 
         const selectAllLabel = document.createElement('label');
-        selectAllLabel.textContent = 'Select All';
-        selectAllLabel.style.color = 'lightgray';
+        selectAllLabel.textContent = ' All';
+        selectAllLabel.style.cursor = 'pointer';
+        selectAllLabel.style.color = 'gray';
         selectAllBox.appendChild(selectAllLabel);
 
         container.appendChild(selectAllBox);
 
-        selectAllCheckbox.addEventListener('change', () => {
+        function toggleAllCheckboxes() {
           const allCheckboxes = container.querySelectorAll('.page-checkbox, .date-checkbox');
           allCheckboxes.forEach(checkbox => checkbox.checked = selectAllCheckbox.checked);
+        }
+
+        selectAllCheckbox.addEventListener('change', toggleAllCheckboxes);
+        selectAllLabel.addEventListener('click', () => {
+          selectAllCheckbox.checked = !selectAllCheckbox.checked;
+          toggleAllCheckboxes();
         });
       }
 
@@ -72,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const dateHeader = document.createElement('div');
         dateHeader.className = 'date-header';
         dateHeader.textContent = date; // Display date in ISO format
-        dateHeader.style.color = 'orange';
+        dateHeader.style.color = 'lightgray';
         dateHeader.style.paddingLeft = '11px';
         dateHeader.style.cursor = 'pointer';
 
@@ -127,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const titleText = document.createElement('span');
           titleText.textContent = getCoreDomain(item.url);
           titleText.style.fontSize = '20px';
-          titleText.style.color = 'lightgray';
+          titleText.style.color = 'var(--entry-title-color)';
 
           const path = document.createElement('span');
           path.style.color = 'gray';
@@ -179,11 +185,22 @@ document.addEventListener('DOMContentLoaded', () => {
             textarea.value = item.markdown;
             textarea.style.height = '50vh';
 
-            // Change event listener from 'input' to 'blur'
+            // Update the event listener
             textarea.addEventListener('blur', () => {
-              markdownData[index].markdown = textarea.value;
-              browser.storage.local.set({ markdownData }).catch((error) => {
-                console.error("Error updating markdownData:", error);
+              const updatedMarkdown = textarea.value;
+              browser.storage.local.get(['markdownData']).then((result) => {
+                let { markdownData } = result;
+                const itemIndex = markdownData.findIndex(md => md.url === item.url);
+                if (itemIndex !== -1) {
+                  markdownData[itemIndex].markdown = updatedMarkdown;
+                  browser.storage.local.set({ markdownData }).then(() => {
+                    console.log("Markdown updated successfully");
+                  }).catch((error) => {
+                    console.error("Error updating markdownData:", error);
+                  });
+                }
+              }).catch((error) => {
+                console.error("Error getting markdownData:", error);
               });
             });
 
