@@ -55,6 +55,6 @@
     "fonts/Atkinson-Hyperlegible-Regular-102.ttf",
     "fonts/Atkinson-Hyperlegible-Bold-102.ttf",
     "diff.min.js",
-    "turndown.js"
+    "turndown.min.js"
   ]
 }

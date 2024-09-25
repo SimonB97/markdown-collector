@@ -72,9 +72,9 @@ function saveCurrentTabUrl(sendResponse) {
 }
 
 function injectContentScriptAndConvert(tabId, sendResponse) {
-  chrome.tabs.executeScript(tabId, { file: "turndown.js" }, () => {
+  chrome.tabs.executeScript(tabId, { file: "turndown.min.js" }, () => {
     if (chrome.runtime.lastError) {
-      console.error("Error injecting turndown.js:", chrome.runtime.lastError);
+      console.error("Error injecting turndown.min.js:", chrome.runtime.lastError);
       return;
     }
     chrome.tabs.executeScript(tabId, { file: "content.js" }, () => {

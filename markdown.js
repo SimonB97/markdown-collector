@@ -442,7 +442,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const html = response.html;
       // Inject TurndownService script
       const script = document.createElement('script');
-      script.src = browser.runtime.getURL('turndown.js');
+      script.src = browser.runtime.getURL('turndown.min.js');
       document.head.appendChild(script);
 
       script.onload = () => {
