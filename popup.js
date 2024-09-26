@@ -27,7 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (currentPageData && currentPageData.markdown) {
                   const markdownText = `<url>${currentPageData.url}</url>\n<title>${currentPageData.title}</title>\n${currentPageData.markdown}`;
                   navigator.clipboard.writeText(markdownText).then(() => {
-                    showMessage('Page copied as Markdown', 'success');
                     copyMarkdownButton.innerHTML = '&#10003; Copied';
                     setTimeout(() => {
                       copyMarkdownButton.innerHTML = '<span style="font-size: 2em;">&#128203;</span><br>Copy as Markdown';
