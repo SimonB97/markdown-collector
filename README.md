@@ -13,10 +13,14 @@ A minimalistic Firefox extension that allows you to collect URLs, convert the co
 
 ## Installation
 
+Install from the Firefox Add-ons Store: [Markdown Collector](https://addons.mozilla.org/de/firefox/addon/markdown-collector/).
+
+_or (for developrs)_
+
 1. **Clone the Repository:**
 
    ```bash
-   git clone https://github.com/yourusername/url-to-markdown-collector.git
+   git clone https://github.com/simonb97/markdown-collector.git
    ```
 
 2. **Load the Extension in Firefox:**
