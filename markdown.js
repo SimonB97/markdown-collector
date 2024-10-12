@@ -552,19 +552,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Function to show diff modal using jsdiff
   function showDiffModal(url, oldMarkdown, newMarkdown, callback) {
+    const modalOverlay = document.createElement('div');
+    modalOverlay.className = 'modal-overlay';
+
     const modal = document.createElement('div');
     modal.className = 'diff-modal';
 
-    // Add the informational box
-    const infoBox = document.createElement('div');
-    infoBox.className = 'info-box';
-    infoBox.innerHTML = `
+    // Close button
+    const closeButton = document.createElement('button');
+    closeButton.className = 'close-button';
+    closeButton.innerHTML = '&times;';
+    closeButton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      callback(false);
+      document.body.removeChild(modalOverlay);
+    });
+
+    // Append close button to modalOverlay instead of modal
+    modalOverlay.appendChild(closeButton);
+
+    // Beta notice box
+    const betaNoticeBox = document.createElement('div');
+    betaNoticeBox.className = 'info-box beta-notice';
+    betaNoticeBox.innerHTML = `
       <p><strong>Notice:</strong> The update function is currently in beta. Due to cross-origin limitations, 
       website contents are fetched in XML format, which may introduce slight variations in how basic structural elements, 
       headers, or similar content are scraped. These differences are indicated in red or green in the diff below, 
       but are generally negligible.</p>
     `;
-    modal.appendChild(infoBox);
+    modal.appendChild(betaNoticeBox);
+
+    // Diff instructions box
+    const diffInstructionsBox = document.createElement('div');
+    diffInstructionsBox.className = 'info-box diff-instructions';
+    diffInstructionsBox.innerHTML = `
+      <p><strong>How to read the diff:</strong></p>
+      <p><span style="color: green;">Green text</span> indicates content that has been added.</p>
+      <p><span style="color: red;">Red text</span> indicates content that has been removed.</p>
+      <p><span style="color: grey;">Grey text</span> indicates unchanged content.</p>
+      <p>At the bottom of this diff, you'll find buttons to either accept or decline the changes.</p>
+    `;
+    modal.appendChild(diffInstructionsBox);
 
     const diff = Diff.diffLines(oldMarkdown, newMarkdown);
     const fragment = document.createDocumentFragment();
@@ -584,22 +612,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const acceptButton = document.createElement('button');
     acceptButton.textContent = 'Accept';
-    acceptButton.addEventListener('click', () => {
+    acceptButton.style.backgroundColor = '#2E7D32';
+    acceptButton.style.color = 'white';
+    acceptButton.style.float = 'right';
+    acceptButton.style.marginLeft = '10px';
+    acceptButton.addEventListener('click', (e) => {
+      e.stopPropagation();
       callback(true);
-      document.body.removeChild(modal);
+      document.body.removeChild(modalOverlay);
     });
 
     const declineButton = document.createElement('button');
     declineButton.textContent = 'Decline';
-    declineButton.addEventListener('click', () => {
+    declineButton.style.backgroundColor = '#8c0d0d';
+    declineButton.style.color = 'white';
+    declineButton.style.float = 'right';
+    declineButton.addEventListener('click', (e) => {
+      e.stopPropagation();
       callback(false);
-      document.body.removeChild(modal);
+      document.body.removeChild(modalOverlay);
     });
+
+    const buttonContainer = document.createElement('div');
+    buttonContainer.style.overflow = 'hidden';
+    buttonContainer.appendChild(declineButton);
+    buttonContainer.appendChild(acceptButton);
 
     modal.appendChild(acceptButton);
     modal.appendChild(declineButton);
 
-    document.body.appendChild(modal);
+    modalOverlay.appendChild(modal);
+
+    // Close modal when clicking outside
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) {
+        callback(false);
+        document.body.removeChild(modalOverlay);
+      }
+    });
+
+    document.body.appendChild(modalOverlay);
   }
 
   /**

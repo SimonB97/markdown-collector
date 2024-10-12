@@ -132,9 +132,10 @@
     .title-text {
       color: var(--entry-title-color);
     }
+    /* ... existing styles ... */
 
-    /* Light theme */
-    @media (prefers-color-scheme: light) {
+    /* Light and Dark theme */
+    @media (prefers-color-scheme: light), (prefers-color-scheme: dark) {
       :root {
         --background-color: #ffffff;
         --text-color: #000000;
@@ -150,10 +151,21 @@
         --focus-color: #4a90e2;
         --focus-shadow-color: rgba(74, 144, 226, 0.2);
         --entry-title-color: #b5661d;
+        --diff-modal-background: #ffffff;
+        --diff-modal-text: #000000;
+        --diff-modal-border: #ccc;
+        --beta-notice-background: #fff3cd;
+        --beta-notice-text: #856404;
+        --beta-notice-strong: #856404;
+        --diff-instructions-background: #e9ecef;
+        --diff-instructions-text: #495057;
+        --diff-instructions-strong: #212529;
+        --close-button-color: #af1717;
+        --close-button-hover-color: #ff0000;
       }
     }
 
-    /* Dark theme */
+    /* Dark theme overrides */
     @media (prefers-color-scheme: dark) {
       :root {
         --background-color: #121212;
@@ -170,21 +182,86 @@
         --focus-color: #64b5f6;
         --focus-shadow-color: rgba(100, 181, 246, 0.2);
         --entry-title-color: #ea9d55;
+        --diff-modal-background: #2a2a2a;
+        --diff-modal-text: #ffffff;
+        --diff-modal-border: #444;
+        --beta-notice-background: #3a3000;
+        --beta-notice-text: #ffd54f;
+        --beta-notice-strong: #ffeb3b;
+        --diff-instructions-background: #3a3a3a;
+        --diff-instructions-text: #ffffff;
+        --diff-instructions-strong: #bdbdbd;
+        --close-button-color: var(--close-button-color);
+        --close-button-hover-color: var(--close-button-hover-color);
       }
     }
 
-    .diff-modal {
+    /* ... rest of the styles ... */
+
+    .modal-overlay {
       position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background-color: white;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    
+    .diff-modal {
+      position: relative;
+      background-color: var(--diff-modal-background);
+      color: var(--diff-modal-text);
       padding: 20px;
-      border: 1px solid #ccc;
+      border: 1px solid var(--diff-modal-border);
+      border-radius: 4px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      max-width: 80%;
+      max-width: 90%;
+      width: 90%;
       max-height: 80%;
       overflow: auto;
+    }
+
+    .diff-modal .info-box {
+      margin-bottom: 15px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+
+    .diff-modal .beta-notice {
+      background-color: var(--beta-notice-background);
+      color: var(--beta-notice-text);
+    }
+
+    .diff-modal .beta-notice strong {
+      color: var(--beta-notice-strong);
+    }
+
+    .diff-modal .diff-instructions {
+      background-color: var(--diff-instructions-background);
+      color: var(--diff-instructions-text);
+    }
+
+    .diff-modal .diff-instructions strong {
+      color: var(--diff-instructions-strong);
+    }
+
+    .close-button {
+      position: fixed;
+      top: 64px;
+      right: 50px;
+      font-size: 24px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--close-button-color);
+      z-index: 1001; /* Ensure it's above other content */
+    }
+
+    .close-button:hover {
+      color: var(--close-button-hover-color);
     }
 
     .diff-modal span {
@@ -195,25 +272,14 @@
     .diff-modal button {
       margin-top: 10px;
       margin-right: 10px;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
     }
 
     .diff-modal .info-box {
-      background-color: #fffbe6;
-      border: 1px solid #ffe58f;
-      border-radius: 4px;
-      padding: 12px;
-      margin-bottom: 16px;
-    }
-
-    .diff-modal .info-box p {
-      color: #5c3c00;
-      font-size: 14px;
-      line-height: 1.5;
-      margin: 0;
-    }
-
-    .diff-modal .info-box strong {
-      color: #d4b106;
+      position: relative; /* Add this */
     }
   </style>
 </head>
