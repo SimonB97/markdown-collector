@@ -463,7 +463,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  function fetchAndConvertToMarkdown(url, callback) {
+  function fetchAndConvertToMarkdown(url, enableCleanup, callback) {
     const timeoutDuration = 30000; // 30 seconds timeout
     let timeoutId;
 
@@ -489,6 +489,34 @@ document.addEventListener('DOMContentLoaded', () => {
           throw new Error(`Error fetching URL: ${response.error}`);
         }
         return response.html;
+      })
+      .then((html) => {
+        return new Promise((resolve) => {
+          if (enableCleanup) {
+            // Dynamically load Readability
+            const readabilityScript = document.createElement('script');
+            readabilityScript.src = chrome.runtime.getURL('libs/Readability.js');
+            readabilityScript.onload = () => {
+              const doc = new DOMParser().parseFromString(html, 'text/html');
+              const reader = new Readability(doc, {
+                keepClasses: ['article-title', 'page-title', 'post-title'],
+                classesToPreserve: ['article-title', 'page-title', 'post-title']
+              });
+              const article = reader.parse();
+              let cleanHtml = article ? article.content : html;
+              
+              // Prepend the title if available
+              if (article && article.title) {
+                cleanHtml = `<h1>${article.title}</h1>${cleanHtml}`;
+              }
+              
+              resolve(cleanHtml);
+            };
+            document.head.appendChild(readabilityScript);
+          } else {
+            resolve(html);
+          }
+        });
       })
       .then((html) => {
         // Inject TurndownService script
@@ -623,31 +651,35 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateEntry(url) {
-    fetchAndConvertToMarkdown(url, (newMarkdown) => {
-      if (!newMarkdown) {
-        console.error("Failed to fetch or convert the page to markdown");
-        return;
-      }
-      chrome.storage.local.get(['markdownData'], (result) => {
-        const markdownData = result.markdownData || [];
-        const item = markdownData.find(item => item.url === url);
-        if (item) {
-          const oldMarkdown = item.markdown;
-          if (newMarkdown !== oldMarkdown) {
-            showDiffModal(url, oldMarkdown, newMarkdown, (accepted) => {
-              if (accepted) {
-                item.markdown = newMarkdown;
-                chrome.storage.local.set({ markdownData }, () => {
-                  loadMarkdownData(); // Reload the data to reflect changes
-                });
-              }
-            });
-          } else {
-            console.log("No changes detected in the markdown content");
-          }
-        } else {
-          console.error("URL not found in markdownData:", url);
+    chrome.storage.local.get(['enableCleanup'], (result) => {
+      const enableCleanup = result.enableCleanup || false;
+      
+      fetchAndConvertToMarkdown(url, enableCleanup, (newMarkdown) => {
+        if (!newMarkdown) {
+          console.error("Failed to fetch or convert the page to markdown");
+          return;
         }
+        chrome.storage.local.get(['markdownData'], (result) => {
+          const markdownData = result.markdownData || [];
+          const item = markdownData.find(item => item.url === url);
+          if (item) {
+            const oldMarkdown = item.markdown;
+            if (newMarkdown !== oldMarkdown) {
+              showDiffModal(url, oldMarkdown, newMarkdown, (accepted) => {
+                if (accepted) {
+                  item.markdown = newMarkdown;
+                  chrome.storage.local.set({ markdownData }, () => {
+                    loadMarkdownData(); // Reload the data to reflect changes
+                  });
+                }
+              });
+            } else {
+              console.log("No changes detected in the markdown content");
+            }
+          } else {
+            console.error("URL not found in markdownData:", url);
+          }
+        });
       });
     });
   }

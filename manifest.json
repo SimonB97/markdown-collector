@@ -48,7 +48,7 @@
     {
       "matches": ["<all_urls>"],
       "js": [
-        "libs/readability.js",
+        "libs/Readability.js",
         "libs/turndown.min.js",
         "content.js",
         "fetchContent.js"
@@ -59,9 +59,9 @@
   "web_accessible_resources": [
     "fonts/Atkinson-Hyperlegible-Regular-102.ttf",
     "fonts/Atkinson-Hyperlegible-Bold-102.ttf",
-    "diff.min.js",
-    "turndown.min.js",
-    "libs/readability.js",
+    "libs/diff.min.js",
+    "libs/turndown.min.js",
+    "libs/Readability.js",
     "settings.html",
     "settings.js",
     "popup.js"
