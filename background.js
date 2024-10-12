@@ -21,6 +21,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
+
 function saveCurrentTabUrl(sendResponse) {
   chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
     if (tabs[0]) {
@@ -180,3 +181,24 @@ function performFetch(url, sendResponse) {
 
   return true; // Indicates that the response is sent asynchronously
 }
+
+chrome.commands.onCommand.addListener((command) => {
+  console.log("Command received:", command);
+  if (command === "save-url") {
+    console.log("Executing save-url command");
+    saveCurrentTabUrl();
+  } else if (command === "open-markdown-page") {
+    console.log("Executing open-markdown-page command");
+    openMarkdownPage();
+  }
+});
+
+// Add this function to check if the commands are registered
+function checkCommands() {
+  chrome.commands.getAll((commands) => {
+    console.log("Registered commands:", commands);
+  });
+}
+
+// Call this function when the background script starts
+checkCommands();

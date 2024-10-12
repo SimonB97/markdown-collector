@@ -94,6 +94,25 @@
       right: 130px;
       background-color: #8c0d0d; /* Dark red tone */
     }
+    .settings-button {
+      position: fixed;
+      top: 14px;
+      right: 52px;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+    }
+    .settings-button img {
+      width: 32px;  /* Increased from 24px */
+      height: 32px; /* Increased from 24px */
+      vertical-align: middle;
+      opacity: 0.7;
+      transition: opacity 0.2s ease;
+    }
+    .settings-button:hover img {
+      opacity: 1;
+    }
     .action-button {
       position: fixed;
       top: 10px;
@@ -185,6 +204,9 @@
   <button class="action-button copy-button" id="copy-markdown-page">⎘ Copy</button>
   <button class="action-button update-button" id="update-markdown-page">↻ Update</button>
   <button class="action-button delete-button" id="delete-markdown-page">✕ Delete</button>
+  <button class="settings-button" id="open-settings">
+    <img src="icons/cogwheel.png" alt="Settings">
+  </button>
   <div class="container" id="markdown-container">
     <!-- Dynamic content will be injected here -->
   </div>

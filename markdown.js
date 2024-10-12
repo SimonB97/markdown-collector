@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const copyButton = document.getElementById('copy-markdown-page');
   const deleteButton = document.getElementById('delete-markdown-page');
   const updateButton = document.getElementById('update-markdown-page');
+  const settingsButton = document.getElementById('open-settings');
 
   // Track open URLs to preserve state after UI update
   let openUrls = new Set();
@@ -461,6 +462,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }).catch((error) => {
       console.error("Error getting markdownData:", error);
     });
+  });
+
+  // Add event listener for the settings button
+  settingsButton.addEventListener('click', () => {
+    browser.runtime.sendMessage({ command: 'open-settings' });
   });
 
   function fetchAndConvertToMarkdown(url, enableCleanup, callback) {
