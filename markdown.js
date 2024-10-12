@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
           const actionButtons = document.createElement('div');
           actionButtons.style.display = 'none';
-          actionButtons.style.marginRight = '10px';
+          actionButtons.style.marginLeft = '10px';
           actionButtons.style.position = 'relative';  // Add this line
           actionButtons.style.zIndex = '1000';  // Add this line
 
