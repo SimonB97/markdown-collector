@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "URL to Markdown Collector",
-  "version": "1.1",
+  "version": "1.2",
   "description": "Collects URLs and converts page content to Markdown.",
   "permissions": [
     "tabs",
@@ -47,13 +47,27 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js", "fetchContent.js"]
+      "js": [
+        "libs/readability.js",
+        "libs/turndown.min.js",
+        "content.js",
+        "fetchContent.js"
+      ],
+      "run_at": "document_end"
     }
   ],
   "web_accessible_resources": [
     "fonts/Atkinson-Hyperlegible-Regular-102.ttf",
     "fonts/Atkinson-Hyperlegible-Bold-102.ttf",
     "diff.min.js",
-    "turndown.min.js"
-  ]
+    "turndown.min.js",
+    "libs/readability.js",
+    "settings.html",
+    "settings.js",
+    "popup.js"
+  ],
+  "options_ui": {
+    "page": "settings.html",
+    "open_in_tab": true
+  }
 }

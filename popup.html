@@ -20,6 +20,7 @@
       padding: 10px;
       background-color: var(--background-color);
       color: var(--text-color);
+      position: relative;
     }
     .button-container {
       display: flex;
@@ -36,6 +37,22 @@
     }
     button:hover {
       background-color: var(--button-hover-background);
+    }
+    .settings-container {
+      text-align: right;
+      margin-top: 0px;
+      margin-bottom: 0px;
+      padding-bottom: 0px;
+    }
+    .settings-container button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+    }
+    .settings-container img {
+      width: 24px;
+      height: 24px;
     }
     .info-container {
       margin-top: 20px;
@@ -68,6 +85,40 @@
         --button-border: #444;
       }
     }
+
+    .settings-container button:hover img {
+      filter: brightness(0.8);
+    }
+
+    .accordion {
+      background-color: var(--button-background);
+      color: var(--button-color);
+      cursor: pointer;
+      padding: 18px;
+      width: 100%;
+      text-align: left;
+      border: none;
+      outline: none;
+      transition: 0.4s;
+      margin-top: 10px;
+    }
+
+    .accordion:hover {
+      background-color: var(--button-hover-background);
+    }
+
+    .panel {
+      padding: 0 18px;
+      background-color: var(--background-color);
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.2s ease-out;
+    }
+
+    .settings-container {
+      text-align: center;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -75,17 +126,28 @@
     <button id="open-markdown">&#8599; Open Collection</button>
     <button id="copy-markdown">&#128203; Copy as Markdown</button>
   </div>
-  <div class="info-container">
-    <p>
-      <!-- <strong>Instructions:</strong> -->
-      <div>
-        ➣ Press "Copy as Markdown" to save the current page and copy its Markdown to the clipboard.<br>
-        ➣   Use "Alt+I" to quickly save (insert) a page without copying.<br>
-        ➣ Open the Markdown collection page to view and manage your saved URLs ("Alt+C").
-      </div>
-    </p>
+  
+  <button class="accordion">Usage</button>
+  <div class="panel">
+    <div class="info-container">
+      <p>
+        <div>
+          ➣ Press "Copy as Markdown" to save the current page and copy its Markdown to the clipboard.<br>
+          ➣   Use "Alt+I" to quickly save (insert) a page without copying.<br>
+          ➣ Open the Markdown collection page to view and manage your saved URLs ("Alt+C").
+        </div>
+      </p>
+    </div>
   </div>
+  
+  <div class="settings-container">
+    <button id="open-settings" title="Settings">
+      <img src="icons/cogwheel.png" alt="Settings">
+    </button>
+  </div>
+  
   <div id="status-message" style="display: none; margin-top: 10px; text-align: center;"></div>
   <script src="popup.js"></script>
+  <script src="accordion.js"></script>
 </body>
 </html>

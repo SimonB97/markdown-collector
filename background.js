@@ -3,7 +3,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   if (request.command === "save-url") {
     saveCurrentTabUrl(sendResponse);
-    return true; // Indicates that the response is sent asynchronously
+    return true; // To respond asynchronously
   } else if (request.command === "open-markdown-page") {
     openMarkdownPage();
     sendResponse({ status: "Markdown page opened" });
@@ -11,129 +11,123 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     chrome.storage.local.get(['markdownData'], (result) => {
       sendResponse({ markdownData: result.markdownData });
     });
-    return true; // Indicates that the response is sent asynchronously
-  } else if (request.command === "fetch-url") {
-    performFetch(request.url, sendResponse);
-    return true; // Indicates that the response is sent asynchronously
-  }
-});
-
-// Function to perform fetch using Fetch API
-function performFetch(url, sendResponse) {
-  console.log(`Performing fetch for URL: ${url}`);
-  
-  browser.tabs.create({ url: url, active: false }, (tab) => {
-    browser.tabs.executeScript(tab.id, { file: "fetchContent.js" }, () => {
-      browser.tabs.sendMessage(tab.id, { command: "getPageContent" }, (response) => {
-        browser.tabs.remove(tab.id);
-        if (response && response.html) {
-          sendResponse({ html: response.html });
-        } else {
-          sendResponse({ error: "Failed to fetch content" });
-        }
-      });
-    });
-  });
-
-  return true; // Indicates that the response is sent asynchronously
-}
-
-chrome.commands.onCommand.addListener((command) => {
-  console.log("Command received:", command);
-  if (command === "save-url") {
-    saveCurrentTabUrl();
-  } else if (command === "open-markdown-page") {
-    openMarkdownPage();
+    return true;
+  } else if (request.command === "open-settings") {
+    openSettingsPage();
+    sendResponse({ status: "Settings page opened" });
   }
 });
 
 function saveCurrentTabUrl(sendResponse) {
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    const tab = tabs[0];
-    if (tab) {
+  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+    if (tabs[0]) {
+      const tab = tabs[0];
       chrome.storage.local.get(['markdownData'], (result) => {
         const markdownData = result.markdownData || [];
-        markdownData.push({
-          url: tab.url,
-          title: tab.title,
-          markdown: "",
-          isLoading: true,
-          savedAt: new Date().toISOString()
-        });
+        const existingIndex = markdownData.findIndex(item => item.url === tab.url);
+        
+        if (existingIndex !== -1) {
+          markdownData[existingIndex].isLoading = true;
+          markdownData[existingIndex].savedAt = new Date().toISOString();
+        } else {
+          markdownData.push({
+            url: tab.url,
+            title: tab.title,
+            markdown: "",
+            isLoading: true,
+            savedAt: new Date().toISOString()
+          });
+        }
+        
         chrome.storage.local.set({ markdownData }, () => {
           if (chrome.runtime.lastError) {
             console.error("Error setting markdownData:", chrome.runtime.lastError);
           }
-          injectContentScriptAndConvert(tab.id, sendResponse);
+          // Send message to content script to convert
+          chrome.tabs.sendMessage(tab.id, { command: 'convert-to-markdown' }, (response) => {
+            if (chrome.runtime.lastError) {
+              console.error("Error sending message to content script:", chrome.runtime.lastError);
+            }
+            console.log("Received response from content script:", response);
+            if (response && response.markdown) {
+              updateMarkdownData(tab, response.markdown);
+            } else {
+              console.error("No markdown received from content script");
+            }
+            if (sendResponse) {
+              sendResponse({ status: "URL saved and conversion started" });
+            }
+          });
         });
       });
+    } else {
+      console.error("No active tab found");
+      if (sendResponse) {
+        sendResponse({ status: "Error: No active tab found" });
+      }
     }
   });
 }
 
-function injectContentScriptAndConvert(tabId, sendResponse) {
-  chrome.tabs.executeScript(tabId, { file: "turndown.min.js" }, () => {
-    if (chrome.runtime.lastError) {
-      console.error("Error injecting turndown.min.js:", chrome.runtime.lastError);
-      return;
-    }
-    chrome.tabs.executeScript(tabId, { file: "content.js" }, () => {
-      if (chrome.runtime.lastError) {
-        console.error("Error injecting content.js:", chrome.runtime.lastError);
-        return;
-      }
-      chrome.tabs.sendMessage(tabId, { command: "convert-to-markdown" }, (response) => {
+function updateMarkdownData(tab, markdown) {
+  console.log("Updating markdown data for tab:", tab.url);
+  chrome.storage.local.get(['markdownData'], (result) => {
+    const markdownData = result.markdownData || [];
+    const index = markdownData.findIndex(item => item.url === tab.url);
+    if (index !== -1) {
+      markdownData[index].markdown = markdown;
+      markdownData[index].isLoading = false;
+      chrome.storage.local.set({ markdownData }, () => {
         if (chrome.runtime.lastError) {
-          console.error("Error sending message to content script:", chrome.runtime.lastError);
-        }
-        if (response && response.markdown) {
-          updateMarkdownData(tabId, response.markdown);
-        }
-        if (sendResponse) {
-          sendResponse({ status: "URL saved and conversion started" });
+          console.error("Error updating markdownData:", chrome.runtime.lastError);
+        } else {
+          console.log("Markdown data updated successfully");
         }
       });
-    });
-  });
-}
-
-function updateMarkdownData(tabId, markdown) {
-  chrome.tabs.get(tabId, (tab) => {
-    chrome.storage.local.get(['markdownData'], (result) => {
-      const markdownData = result.markdownData || [];
-      const index = markdownData.findIndex(item => item.url === tab.url);
-      if (index !== -1) {
-        markdownData[index].markdown = markdown;
-        markdownData[index].isLoading = false;
-        chrome.storage.local.set({ markdownData }, () => {
-          if (chrome.runtime.lastError) {
-            console.error("Error updating markdownData:", chrome.runtime.lastError);
-          }
-        });
-      }
-    });
+    } else {
+      console.error("URL not found in markdownData:", tab.url);
+    }
   });
 }
 
 function openMarkdownPage() {
   const markdownUrl = chrome.runtime.getURL("markdown.html");
 
-  // First, check if the page is already open
   chrome.tabs.query({}, (tabs) => {
     const existingTab = tabs.find(tab => tab.url === markdownUrl);
     
     if (existingTab) {
-      // If the tab exists, switch to it
       chrome.tabs.update(existingTab.id, { active: true }, (updatedTab) => {
         chrome.windows.update(updatedTab.windowId, { focused: true });
       });
     } else {
-      // If the tab doesn't exist, create a new one
       chrome.tabs.create({ url: markdownUrl }, (tab) => {
         if (chrome.runtime.lastError) {
           console.error("Error opening markdown page:", chrome.runtime.lastError);
         } else {
           console.log("Markdown page opened successfully");
+        }
+      });
+    }
+  });
+}
+
+function openSettingsPage() {
+  const settingsUrl = chrome.runtime.getURL("settings.html");
+
+  chrome.tabs.query({}, (tabs) => {
+    const existingTab = tabs.find(tab => tab.url === settingsUrl);
+    
+    if (existingTab) {
+      chrome.tabs.update(existingTab.id, { active: true }, (updatedTab) => {
+        chrome.windows.update(updatedTab.windowId, { focused: true });
+      });
+    } else {
+      chrome.tabs.create({ url: settingsUrl }, (tab) => {
+        if (chrome.runtime.lastError) {
+          console.error("Error opening settings page:", chrome.runtime.lastError);
+        } else {
+          console.log("Settings page opened successfully");
         }
       });
     }

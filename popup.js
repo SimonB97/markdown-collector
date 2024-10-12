@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   const openMarkdownButton = document.getElementById('open-markdown');
   const copyMarkdownButton = document.getElementById('copy-markdown');
+  const openSettingsButton = document.getElementById('open-settings');
   const statusMessage = document.getElementById('status-message');
 
   // Update initial button labels
@@ -27,9 +28,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (currentPageData && currentPageData.markdown) {
                   const markdownText = `<url>${currentPageData.url}</url>\n<title>${currentPageData.title}</title>\n${currentPageData.markdown}`;
                   navigator.clipboard.writeText(markdownText).then(() => {
-                    copyMarkdownButton.innerHTML = '&#10003; Copied';
+                    copyMarkdownButton.textContent = '✓ Copied';
                     setTimeout(() => {
-                      copyMarkdownButton.innerHTML = '<span style="font-size: 2em;">&#128203;</span><br>Copy as Markdown';
+                      copyMarkdownButton.textContent = '📋 Copy as Markdown';
                     }, 2000); // Reset button text after 2 seconds
                   }).catch((err) => {
                     console.error('Error copying to clipboard:', err);
@@ -48,6 +49,10 @@ document.addEventListener('DOMContentLoaded', () => {
         showMessage('No active tab found', 'error');
       }
     });
+  });
+
+  openSettingsButton.addEventListener('click', () => {
+    chrome.runtime.sendMessage({ command: 'open-settings' });
   });
 
   function showMessage(message, type = 'info') {

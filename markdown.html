@@ -18,6 +18,7 @@
       font-family: 'Atkinson Hyperlegible', Arial, sans-serif;
       background-color: var(--background-color);
       color: var(--text-color);
+      margin: 20px;
     }
     .container {
       width: 97%;
@@ -28,7 +29,7 @@
       border-top: 1px solid var(--border-color);
       padding: 10px;
       margin: 10px 0;
-      margin-left: 16px;
+      margin-left: 26px;
     }
     .box-title {
       display: flex;
@@ -179,6 +180,8 @@
   </style>
 </head>
 <body>
+  <h1><span style="color: #e6b31c;">Markdown Collector</span></h1>
+
   <button class="action-button copy-button" id="copy-markdown-page">⎘ Copy</button>
   <button class="action-button update-button" id="update-markdown-page">↻ Update</button>
   <button class="action-button delete-button" id="delete-markdown-page">✕ Delete</button>
@@ -187,8 +190,8 @@
   </div>
 
   <!-- Load diff.min.js before markdown.js -->
-  <script src="turndown.min.js"></script>
-  <script src="diff.min.js"></script>
+  <script src="libs/turndown.min.js"></script>
+  <script src="libs/diff.min.js"></script>
   <script src="markdown.js"></script>
 </body>
 </html>

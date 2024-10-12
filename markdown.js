@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderMarkdownData(markdownData) {
+    console.log("Rendering markdown data:", markdownData);
     // Clear the container before adding new elements
     container.innerHTML = '';
 
@@ -442,7 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const html = response.html;
       // Inject TurndownService script
       const script = document.createElement('script');
-      script.src = browser.runtime.getURL('turndown.min.js');
+      script.src = browser.runtime.getURL('libs/turndown.min.js');
       document.head.appendChild(script);
 
       script.onload = () => {
