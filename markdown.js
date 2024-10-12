@@ -555,6 +555,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const modal = document.createElement('div');
     modal.className = 'diff-modal';
 
+    // Add the informational box
+    const infoBox = document.createElement('div');
+    infoBox.className = 'info-box';
+    infoBox.innerHTML = `
+      <p><strong>Notice:</strong> The update function is currently in beta. Due to cross-origin limitations, 
+      website contents are fetched in XML format, which may introduce slight variations in how basic structural elements, 
+      headers, or similar content are scraped. These differences are indicated in red or green in the diff below, 
+      but are generally negligible.</p>
+    `;
+    modal.appendChild(infoBox);
+
     const diff = Diff.diffLines(oldMarkdown, newMarkdown);
     const fragment = document.createDocumentFragment();
 
