@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
           actionButtons.style.marginRight = '10px';
 
           const updateButton = createActionButton('↻', '#1a5f7a', () => updateEntry(item.url));
-          const deleteButton = createActionButton('✕', '#8b0000', () => deleteEntry(item.url));
+          const deleteButton = createActionButton('✕', '#8c0d0d', () => deleteEntry(item.url));
 
           actionButtons.appendChild(updateButton);
           actionButtons.appendChild(deleteButton);
@@ -600,9 +600,9 @@ document.addEventListener('DOMContentLoaded', () => {
     button.style.backgroundColor = color;
     button.style.color = 'white';
     button.style.border = '1px solid var(--button-border)';
-    button.style.borderRadius = '3px';
-    button.style.padding = '1px 3px'; // Slightly smaller padding
-    button.style.marginRight = '3px'; // Less space between buttons
+    button.style.borderRadius = '5px';
+    button.style.padding = '2px 5px'; // Slightly smaller padding
+    button.style.marginRight = '10px'; // Less space between buttons
     button.style.cursor = 'pointer';
     button.style.fontSize = '14px'; // Smaller font size
     button.addEventListener('click', (e) => {
