@@ -15,6 +15,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.command === "open-settings") {
     openSettingsPage();
     sendResponse({ status: "Settings page opened" });
+  } else if (request.command === "fetch-url") {
+    fetchUrl(request.url, sendResponse);
+    return true; // To respond asynchronously
   }
 });
 
@@ -132,4 +135,48 @@ function openSettingsPage() {
       });
     }
   });
+}
+
+function fetchUrl(url, sendResponse) {
+  console.log(`Fetching URL: ${url}`);
+  
+  fetch(url)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.text();
+    })
+    .then(html => {
+      console.log(`Successfully fetched URL: ${url}`);
+      sendResponse({ html: html });
+      console.log('Sent response with HTML');
+    })
+    .catch(error => {
+      console.error('Error fetching URL:', error);
+      sendResponse({ error: error.message });
+      console.log('Sent response with error');
+    });
+  
+  // This line is crucial for asynchronous response
+  return true;
+}
+
+function performFetch(url, sendResponse) {
+  console.log(`Performing fetch for URL: ${url}`);
+  
+  chrome.tabs.create({ url: url, active: false }, (tab) => {
+    chrome.tabs.executeScript(tab.id, { file: "fetchContent.js" }, () => {
+      chrome.tabs.sendMessage(tab.id, { command: "getPageContent" }, (response) => {
+        chrome.tabs.remove(tab.id);
+        if (response && response.html) {
+          sendResponse({ html: response.html });
+        } else {
+          sendResponse({ error: "Failed to fetch content" });
+        }
+      });
+    });
+  });
+
+  return true; // Indicates that the response is sent asynchronously
 }

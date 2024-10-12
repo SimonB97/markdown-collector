@@ -144,17 +144,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
           titleContent.appendChild(titleText);
 
+          const rightSection = document.createElement('div');
+          rightSection.style.display = 'flex';
+          rightSection.style.justifyContent = 'flex-end';
+          rightSection.style.maxWidth = '150px';
+          rightSection.style.alignItems = 'center';
+          rightSection.style.marginRight = '10px';
+
+          const actionButtons = document.createElement('div');
+          actionButtons.style.display = 'none';
+          actionButtons.style.marginRight = '10px';
+
+          const updateButton = createActionButton('↻', '#1a5f7a', () => updateEntry(item.url));
+          const deleteButton = createActionButton('✕', '#8b0000', () => deleteEntry(item.url));
+
+          actionButtons.appendChild(updateButton);
+          actionButtons.appendChild(deleteButton);
+
           const dateTimeText = document.createElement('span');
           const savedDateTime = new Date(item.savedAt);
           dateTimeText.textContent = `${savedDateTime.toLocaleTimeString()}`;
           dateTimeText.style.color = 'gray';
           dateTimeText.style.fontSize = '16px';
-          dateTimeText.style.marginLeft = '10px';
-          dateTimeText.style.flexShrink = '0';
+          dateTimeText.style.marginLeft = '54px';
+
+          rightSection.appendChild(actionButtons);
+          rightSection.appendChild(dateTimeText);
 
           title.appendChild(pageCheckbox);
           title.appendChild(titleContent);
-          title.appendChild(dateTimeText);
+          title.appendChild(rightSection);
+
+          // Show action buttons on hover
+          title.addEventListener('mouseenter', () => {
+            actionButtons.style.display = 'inline-block';
+            dateTimeText.style.marginLeft = '0';
+          });
+          
+          title.addEventListener('mouseleave', () => {
+            actionButtons.style.display = 'none';
+            dateTimeText.style.marginLeft = '54px';
+          });
 
           // Prevent checkbox click from toggling the content
           pageCheckbox.addEventListener('click', (event) => {
@@ -434,26 +464,53 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function fetchAndConvertToMarkdown(url, callback) {
-    browser.runtime.sendMessage({ command: "fetch-url", url: url }).then((response) => {
-      if (response.error) {
-        console.error('Error fetching URL:', response.error);
-        return;
-      }
-      
-      const html = response.html;
-      // Inject TurndownService script
-      const script = document.createElement('script');
-      script.src = browser.runtime.getURL('libs/turndown.min.js');
-      document.head.appendChild(script);
+    const timeoutDuration = 30000; // 30 seconds timeout
+    let timeoutId;
 
-      script.onload = () => {
-        const turndownService = new TurndownService();
-        const markdown = turndownService.turndown(html);
-        callback(markdown);
-      };
-    }).catch((error) => {
-      console.error('Error sending message to fetch URL:', error);
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutId = setTimeout(() => {
+        reject(new Error('Request timed out'));
+      }, timeoutDuration);
     });
+
+    const fetchPromise = new Promise((resolve) => {
+      chrome.runtime.sendMessage({ command: "fetch-url", url: url }, (response) => {
+        clearTimeout(timeoutId);
+        resolve(response);
+      });
+    });
+
+    Promise.race([fetchPromise, timeoutPromise])
+      .then((response) => {
+        if (!response) {
+          throw new Error('No response received from background script');
+        }
+        if (response.error) {
+          throw new Error(`Error fetching URL: ${response.error}`);
+        }
+        return response.html;
+      })
+      .then((html) => {
+        // Inject TurndownService script
+        const script = document.createElement('script');
+        script.src = chrome.runtime.getURL('libs/turndown.min.js');
+        document.head.appendChild(script);
+
+        return new Promise((resolve) => {
+          script.onload = () => {
+            const turndownService = new TurndownService();
+            const markdown = turndownService.turndown(html);
+            resolve(markdown);
+          };
+        });
+      })
+      .then((markdown) => {
+        callback(markdown);
+      })
+      .catch((error) => {
+        console.error('Error in fetchAndConvertToMarkdown:', error);
+        callback(null);
+      });
   }
 
   // Function to show diff modal using jsdiff
@@ -535,5 +592,67 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     return mockData;
+  }
+
+  function createActionButton(text, color, onClick) {
+    const button = document.createElement('button');
+    button.textContent = text;
+    button.style.backgroundColor = color;
+    button.style.color = 'white';
+    button.style.border = '1px solid var(--button-border)';
+    button.style.borderRadius = '3px';
+    button.style.padding = '1px 3px'; // Slightly smaller padding
+    button.style.marginRight = '3px'; // Less space between buttons
+    button.style.cursor = 'pointer';
+    button.style.fontSize = '14px'; // Smaller font size
+    button.addEventListener('click', (e) => {
+      e.stopPropagation();
+      onClick();
+    });
+    return button;
+  }
+
+  function updateEntry(url) {
+    fetchAndConvertToMarkdown(url, (newMarkdown) => {
+      if (!newMarkdown) {
+        console.error("Failed to fetch or convert the page to markdown");
+        return;
+      }
+      chrome.storage.local.get(['markdownData'], (result) => {
+        const markdownData = result.markdownData || [];
+        const item = markdownData.find(item => item.url === url);
+        if (item) {
+          const oldMarkdown = item.markdown;
+          if (newMarkdown !== oldMarkdown) {
+            showDiffModal(url, oldMarkdown, newMarkdown, (accepted) => {
+              if (accepted) {
+                item.markdown = newMarkdown;
+                chrome.storage.local.set({ markdownData }, () => {
+                  loadMarkdownData(); // Reload the data to reflect changes
+                });
+              }
+            });
+          } else {
+            console.log("No changes detected in the markdown content");
+          }
+        } else {
+          console.error("URL not found in markdownData:", url);
+        }
+      });
+    });
+  }
+
+  function deleteEntry(url) {
+    browser.storage.local.get(['markdownData']).then((result) => {
+      const { markdownData } = result;
+      const updatedData = markdownData.filter(item => item.url !== url);
+      browser.storage.local.set({ markdownData: updatedData }).then(() => {
+        loadMarkdownData(); // Reload the data to reflect changes
+      }).catch((error) => {
+        console.error("Error deleting markdownData:", error);
+      });
+    }).catch((error) => {
+      console.error("Error getting markdownData:", error);
+    });
   }
 });
