@@ -155,10 +155,14 @@ document.addEventListener('DOMContentLoaded', () => {
           const actionButtons = document.createElement('div');
           actionButtons.style.display = 'none';
           actionButtons.style.marginRight = '10px';
+          actionButtons.style.position = 'relative';  // Add this line
+          actionButtons.style.zIndex = '1000';  // Add this line
 
+          const copyButton = createActionButton('⎘', '#4a4a4a', () => copyEntry(item.url, item.markdown));
           const updateButton = createActionButton('↻', '#1a5f7a', () => updateEntry(item.url));
           const deleteButton = createActionButton('✕', '#8c0d0d', () => deleteEntry(item.url));
 
+          actionButtons.appendChild(copyButton);
           actionButtons.appendChild(updateButton);
           actionButtons.appendChild(deleteButton);
 
@@ -167,7 +171,6 @@ document.addEventListener('DOMContentLoaded', () => {
           dateTimeText.textContent = `${savedDateTime.toLocaleTimeString()}`;
           dateTimeText.style.color = 'gray';
           dateTimeText.style.fontSize = '16px';
-          dateTimeText.style.marginLeft = '54px';
 
           rightSection.appendChild(actionButtons);
           rightSection.appendChild(dateTimeText);
@@ -178,13 +181,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
           // Show action buttons on hover
           title.addEventListener('mouseenter', () => {
-            actionButtons.style.display = 'inline-block';
-            dateTimeText.style.marginLeft = '0';
+            actionButtons.style.display = 'inline-flex';
+            actionButtons.style.pointerEvents = 'auto';  // Enable pointer events when visible
           });
           
           title.addEventListener('mouseleave', () => {
             actionButtons.style.display = 'none';
-            dateTimeText.style.marginLeft = '54px';
+            actionButtons.style.pointerEvents = 'none';  // Disable pointer events when hidden
           });
 
           // Prevent checkbox click from toggling the content
@@ -636,10 +639,17 @@ document.addEventListener('DOMContentLoaded', () => {
     button.style.border = '1px solid var(--button-border)';
     button.style.borderRadius = '3px';
     button.style.padding = '2px 5px';
-    button.style.marginRight = '12px';
+    button.style.marginRight = '5px';
     button.style.cursor = 'pointer';
     button.style.fontSize = '14px';
-    button.style.transition = 'filter 0.2s ease'; // Add transition for smooth effect
+    button.style.transition = 'filter 0.2s ease';
+    // Add a tooltip to show the button's function on hover
+    button.title = {
+      '⎘': 'Copy',
+      '↻': 'Update',
+      '✕': 'Delete'
+    }[text] || 'Action';
+    
     button.addEventListener('click', (e) => {
       e.stopPropagation();
       onClick();
@@ -701,6 +711,16 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }).catch((error) => {
       console.error("Error getting markdownData:", error);
+    });
+  }
+
+  function copyEntry(url, markdown) {
+    const content = `<url>${url}</url>\n${markdown}`;
+    navigator.clipboard.writeText(content).then(() => {
+      console.log('Entry copied to clipboard');
+      // You can add a visual feedback here if needed
+    }).catch((err) => {
+      console.error('Error copying entry to clipboard:', err);
     });
   }
 });
