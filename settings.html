@@ -37,16 +37,22 @@
     .setting label {
       flex: 1;
       font-size: 18px;
+      display: flex;
+      align-items: center;
+      position: relative;
     }
     .toggle-switch {
       position: relative;
-      max-width: 50px;
+      max-width: 53px;
       height: 24px;
     }
     .toggle-switch input {
       opacity: 0;
       width: 0;
       height: 0;
+    }
+    .toggle-switch:hover {
+      filter: brightness(110%);
     }
     .slider {
       position: absolute;
@@ -74,7 +80,7 @@
       background-color: #4CAF50;
     }
     input:checked + .slider:before {
-      transform: translateX(26px);
+      transform: translateX(29px);
     }
 
     /* Light theme */
@@ -94,15 +100,72 @@
         --border-color: #333333;
       }
     }
+
+    .info-icon {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background-color: var(--info-icon-bg);
+      color: var(--info-icon-color);
+      font-size: 12px;
+      margin-left: 8px;
+      cursor: help;
+      position: relative;
+    }
+
+    .info-popup {
+      display: none;
+      position: absolute;
+      background-color: var(--background-color);
+      border: 1px solid var(--border-color);
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 14px;
+      max-width: 250px;
+      width: max-content;
+      z-index: 1;
+      top: 100%;
+      left: 0;
+      margin-top: 5px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .info-icon:hover .info-popup {
+      display: block;
+    }
+
+    /* Light theme */
+    @media (prefers-color-scheme: light) {
+      :root {
+        --info-icon-bg: rgba(0, 0, 0, 0.1);
+        --info-icon-color: rgba(0, 0, 0, 0.7);
+      }
+    }
+
+    /* Dark theme */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --info-icon-bg: rgba(255, 255, 255, 0.2);
+        --info-icon-color: rgba(255, 255, 255, 0.8);
+      }
+    }
   </style>
 </head>
 <body>
   <h1><span style="color: #e6b31c;">Markdown Collector</span> Settings</h1>
-    
+
   <div class="setting">
-    <label for="cleanup-toggle">Enable Content Cleanup (Readability)</label>
+    <label for="cleanup-toggle">
+      Keep main content only
+      <span class="info-icon">i
+        <span class="info-popup">Removes navigation, ads, and other non-essential elements from the page before converting to Markdown.</span>
+      </span>
+    </label>
     <label class="toggle-switch">
-      <input type="checkbox" id="cleanup-toggle">
+      <input type="checkbox" id="cleanup-toggle" checked>
       <span class="slider"></span>
     </label>
   </div>

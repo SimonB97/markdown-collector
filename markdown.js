@@ -600,15 +600,25 @@ document.addEventListener('DOMContentLoaded', () => {
     button.style.backgroundColor = color;
     button.style.color = 'white';
     button.style.border = '1px solid var(--button-border)';
-    button.style.borderRadius = '5px';
-    button.style.padding = '2px 5px'; // Slightly smaller padding
-    button.style.marginRight = '10px'; // Less space between buttons
+    button.style.borderRadius = '3px';
+    button.style.padding = '2px 5px';
+    button.style.marginRight = '12px';
     button.style.cursor = 'pointer';
-    button.style.fontSize = '14px'; // Smaller font size
+    button.style.fontSize = '14px';
+    button.style.transition = 'filter 0.2s ease'; // Add transition for smooth effect
     button.addEventListener('click', (e) => {
       e.stopPropagation();
       onClick();
     });
+    
+    // Add hover effect
+    button.addEventListener('mouseenter', () => {
+      button.style.filter = 'brightness(115%)';
+    });
+    button.addEventListener('mouseleave', () => {
+      button.style.filter = 'brightness(100%)';
+    });
+    
     return button;
   }
 
