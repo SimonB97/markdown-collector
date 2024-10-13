@@ -1,6 +1,6 @@
 {
   "manifest_version": 2,
-  "name": "URL to Markdown Collector",
+  "name": "Markdown Collector",
   "version": "1.2",
   "description": "Collects URLs and converts page content to Markdown.",
   "permissions": [

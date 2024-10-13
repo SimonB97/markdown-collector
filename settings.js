@@ -19,9 +19,9 @@
 document.addEventListener('DOMContentLoaded', () => {
   const cleanupToggle = document.getElementById('cleanup-toggle');
 
-  // Initialize the toggle based on stored setting, defaulting to true if not set
+  // Initialize the toggle based on stored setting, defaulting to false if not set
   chrome.storage.local.get(['enableCleanup'], (result) => {
-    const isEnabled = result.enableCleanup !== undefined ? result.enableCleanup : true;
+    const isEnabled = result.enableCleanup !== undefined ? result.enableCleanup : false;
     cleanupToggle.checked = isEnabled;
     updateToggleVisually(cleanupToggle);
   });

@@ -35,7 +35,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({ status: "Settings page opened" });
   } else if (request.command === "fetch-url") {
     fetchUrl(request.url, sendResponse);
-    return true; // To respond asynchronously
+    return true;
   }
 });
 
@@ -177,7 +177,6 @@ function fetchUrl(url, sendResponse) {
       console.log('Sent response with error');
     });
   
-  // This line is crucial for asynchronous response
   return true;
 }
 
@@ -197,7 +196,7 @@ function performFetch(url, sendResponse) {
     });
   });
 
-  return true; // Indicates that the response is sent asynchronously
+  return true;
 }
 
 chrome.commands.onCommand.addListener((command) => {
@@ -211,12 +210,10 @@ chrome.commands.onCommand.addListener((command) => {
   }
 });
 
-// Add this function to check if the commands are registered
 function checkCommands() {
   chrome.commands.getAll((commands) => {
     console.log("Registered commands:", commands);
   });
 }
 
-// Call this function when the background script starts
 checkCommands();
