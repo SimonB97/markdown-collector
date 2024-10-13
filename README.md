@@ -87,3 +87,4 @@ This project is licensed under the [GNU General Public License v3.0](LICENSE).
 
 - [Turndown](https://github.com/domchristie/turndown) for HTML to Markdown conversion.
 - [JsDiff](https://github.com/kpdecker/jsdiff) for showing differences between Markdown texts.
+- [Readability](https://github.com/mozilla/readability) for extracting the main content of a page.
