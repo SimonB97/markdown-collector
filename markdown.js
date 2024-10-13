@@ -751,6 +751,15 @@ document.addEventListener('DOMContentLoaded', () => {
     button.addEventListener('click', (e) => {
       e.stopPropagation();
       onClick();
+      
+      // For copy button, change to checkmark
+      if (text === '⎘') {
+        const originalText = button.textContent;
+        button.textContent = '✓';
+        setTimeout(() => {
+          button.textContent = originalText;
+        }, 2000);
+      }
     });
     
     button.addEventListener('mouseenter', () => {
