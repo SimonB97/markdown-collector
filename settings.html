@@ -89,6 +89,8 @@
         --background-color: #ffffff;
         --text-color: #000000;
         --border-color: #e0e0e0;
+        --info-icon-bg: rgba(25, 25, 25, 0.177);
+        --info-icon-color: rgba(26, 26, 26, 0.612);
       }
     }
 
@@ -98,6 +100,8 @@
         --background-color: #121212;
         --text-color: #ffffff;
         --border-color: #333333;
+        --info-icon-bg: rgba(255, 255, 255, 0.108);
+        --info-icon-color: rgba(255, 255, 255, 0.838);
       }
     }
 
@@ -146,22 +150,6 @@
       left: 0;
       width: 100%;
       height: 10px;
-    }
-
-    /* Light theme */
-    @media (prefers-color-scheme: light) {
-      :root {
-        --info-icon-bg: rgba(25, 25, 25, 0.177);
-        --info-icon-color: rgb(255, 255, 255);
-      }
-    }
-
-    /* Dark theme */
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --info-icon-bg: rgba(255, 255, 255, 0.108);
-        --info-icon-color: rgba(255, 255, 255, 0.838);
-      }
     }
 
     .toggle-switch.checked .slider {
