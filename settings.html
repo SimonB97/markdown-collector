@@ -88,6 +88,7 @@
       :root {
         --background-color: #ffffff;
         --text-color: #000000;
+        --text-color-light: rgba(26, 26, 26, 0.612);
         --border-color: #e0e0e0;
         --info-icon-bg: rgba(25, 25, 25, 0.177);
         --info-icon-color: rgba(26, 26, 26, 0.612);
@@ -99,6 +100,7 @@
       :root {
         --background-color: #121212;
         --text-color: #ffffff;
+        --text-color-light: rgba(255, 255, 255, 0.708);
         --border-color: #333333;
         --info-icon-bg: rgba(255, 255, 255, 0.108);
         --info-icon-color: rgba(255, 255, 255, 0.838);
@@ -125,11 +127,11 @@
       position: absolute;
       background-color: var(--background-color);
       border: 1px solid var(--border-color);
-      color: var(--text-color);
+      color: var(--text-color-light);
       padding: 10px;
       border-radius: 4px;
       font-size: 14px;
-      max-width: 250px;
+      max-width: 280px;
       width: max-content;
       z-index: 1;
       top: 100%;
@@ -168,7 +170,7 @@
     <label for="cleanup-toggle">
       Keep main content only
       <span class="info-icon">?
-        <span class="info-popup">Uses a package called Readability (Mozilla) to extract the main content by removing navigation, ads, sidebars, and other non-essential elements. It cleans up scripts, styles, unlikely candidates, empty nodes, and elements with low content scores or high link density. This process aims to leave only the article text and relevant images. For details, see the <a href="https://github.com/mozilla/readability" target="_blank">Readability docs</a>.</span>
+        <span class="info-popup">Uses a package called Readability (Mozilla) to extract the main content by removing navigation, ads, sidebars, and other non-essential elements. It cleans up scripts, styles, unlikely candidates, empty nodes, and elements with low content scores or high link density. This process aims to leave only the article text and relevant images. For details, see the <a href="https://github.com/mozilla/readability" target="_blank" style="color: rgb(79, 138, 255); text-decoration: none;">Readability docs</a>.</span>
       </span>
     </label>
     <label class="toggle-switch">

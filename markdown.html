@@ -84,15 +84,16 @@
     }
     .copy-button {
       right: 410px;
-      background-color: var(--button-background);
+      background-color: var(--copy-button-background);
+      color: var(--button-color);
     }
     .update-button {
       right: 270px;
-      background-color: #1a5f7a; /* Dark blue tone */
+      background-color: var(--update-button-background);
     }
     .delete-button {
       right: 130px;
-      background-color: #8c0d0d; /* Dark red tone */
+      background-color: var(--delete-button-background);
     }
     .settings-button {
       position: fixed;
@@ -104,8 +105,8 @@
       cursor: pointer;
     }
     .settings-button img {
-      width: 30px;  /* Increased from 24px */
-      height: 30px; /* Increased from 24px */
+      width: 30px;
+      height: 30px;
       vertical-align: middle;
       opacity: 0.7;
       transition: opacity 0.2s ease;
@@ -132,12 +133,10 @@
     .title-text {
       color: var(--entry-title-color);
     }
-    /* ... existing styles ... */
 
     /* Light and Dark theme */
     @media (prefers-color-scheme: light), (prefers-color-scheme: dark) {
       :root {
-        --background-color: #ffffff;
         --text-color: #000000;
         --border-color: #ccc;
         --textarea-background: #ffffff;
@@ -145,9 +144,9 @@
         --loading-color: blue;
         --button-background: #f0f0f0;
         --button-hover-background: #e0e0e0;
-        --button-color: #000000;
+        --button-color: #ffffff;
         --button-border: #ccc;
-        --box-title-hover-background: #f0f0f0;
+        --box-title-hover-background: #e6e6e6;
         --focus-color: #4a90e2;
         --focus-shadow-color: rgba(74, 144, 226, 0.2);
         --entry-title-color: #b5661d;
@@ -168,7 +167,6 @@
     /* Dark theme overrides */
     @media (prefers-color-scheme: dark) {
       :root {
-        --background-color: #121212;
         --text-color: #ffffff;
         --border-color: #444;
         --textarea-background: #333;
@@ -178,7 +176,7 @@
         --button-hover-background: #444;
         --button-color: #ffffff;
         --button-border: #000000;
-        --box-title-hover-background: #1c1c1c;
+        --box-title-hover-background: #161616;
         --focus-color: #64b5f6;
         --focus-shadow-color: rgba(100, 181, 246, 0.2);
         --entry-title-color: #ea9d55;
@@ -195,8 +193,6 @@
         --close-button-hover-color: var(--close-button-hover-color);
       }
     }
-
-    /* ... rest of the styles ... */
 
     .modal-overlay {
       position: fixed;
@@ -281,6 +277,131 @@
     .diff-modal .info-box {
       position: relative; /* Add this */
     }
+
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .info-box {
+      background: linear-gradient(135deg, #4476a1df, #297f7fda);
+      border: none;
+      border-radius: 8px;
+      padding: 15px;
+      font-size: 14px;
+      max-width: 300px;
+      margin-right: 50px;
+      z-index: 1;
+      position: fixed;
+      top: 70px;
+      right: 20px;
+      color: white;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .info-box p {
+      margin: 0 0 10px 0;
+    }
+
+    .understand-button {
+      background-color: rgba(255, 255, 255, 0.15);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background-color 0.3s ease;
+    }
+
+    .understand-button:hover {
+      background-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .gear-icon {
+      background-image: url('icons/cogwheel.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      display: inline-block;
+      margin-right: 5px;
+      margin-left: 2px;
+      width: 18px;
+      height: 18px;
+      vertical-align: middle; /* This will align the icon with the middle of the line */
+      margin-bottom: 2px; /* This will move the icon slightly lower */
+    }
+
+    /* Light theme */
+    @media (prefers-color-scheme: light) {
+      :root {
+        --background-color: #ebebeb;
+        --text-color: #000000;
+        --border-color: #ccc;
+        --textarea-background: #ffffff;
+        --textarea-color: #000000;
+        --loading-color: blue;
+        --button-background: #f0f0f0;
+        --button-hover-background: #e0e0e0;
+        --button-color: #343434;
+        --button-border: #ccc;
+        --focus-color: #4a90e2;
+        --focus-shadow-color: rgba(74, 144, 226, 0.2);
+        --entry-title-color: #b5661d;
+        --diff-modal-background: #ffffff;
+        --diff-modal-text: #000000;
+        --diff-modal-border: #ccc;
+        --beta-notice-background: #fff3cd;
+        --beta-notice-text: #856404;
+        --beta-notice-strong: #856404;
+        --diff-instructions-background: #e9ecef;
+        --diff-instructions-text: #495057;
+        --diff-instructions-strong: #212529;
+        --close-button-color: #af1717;
+        --close-button-hover-color: #ff0000;
+        --info-box-background: #f0f0f0;
+        --info-box-border: #cccccc;
+        --copy-button-background: #4a4a4a6c;
+        --update-button-background: #32758fbb;
+        --delete-button-background: #b43838ab;
+      }
+    }
+
+    /* Dark theme */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background-color: #121212;
+        --text-color: #ffffff;
+        --border-color: #444;
+        --textarea-background: #333;
+        --textarea-color: #ffffff;
+        --loading-color: lightblue;
+        --button-background: #333;
+        --button-hover-background: #444;
+        --button-color: #ffffff;
+        --button-border: #000000;
+        --focus-color: #64b5f6;
+        --focus-shadow-color: rgba(100, 181, 246, 0.2);
+        --entry-title-color: #ea9d55;
+        --diff-modal-background: #2a2a2a;
+        --diff-modal-text: #ffffff;
+        --diff-modal-border: #444;
+        --beta-notice-background: #3a3000;
+        --beta-notice-text: #ffd54f;
+        --beta-notice-strong: #ffeb3b;
+        --diff-instructions-background: #3a3a3a;
+        --diff-instructions-text: #ffffff;
+        --diff-instructions-strong: #bdbdbd;
+        --close-button-color: var(--close-button-color);
+        --close-button-hover-color: var(--close-button-hover-color);
+        --info-box-background: #2a2a2a;
+        --info-box-border: #444444;
+        --copy-button-background: #4a4a4a;
+        --update-button-background: #1a5f7a;
+        --delete-button-background: #9b2727f5;
+      }
+    }
   </style>
 </head>
 <body>
@@ -292,6 +413,13 @@
   <button class="settings-button" id="open-settings">
     <img src="icons/cogwheel.png" alt="Settings">
   </button>
+  <div class="info-box" id="tip-box">
+    <p>
+      Tip:<br>Open <span class="gear-icon"></span>settings to enable<br><strong><i>Keep main content only</i></strong><br>for cleaner content.
+    </p>
+    <button class="understand-button" id="understand-button">I understand!</button>
+  </div>
+
   <div class="container" id="markdown-container">
     <!-- Dynamic content will be injected here -->
   </div>

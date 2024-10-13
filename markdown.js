@@ -22,6 +22,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const deleteButton = document.getElementById('delete-markdown-page');
   const updateButton = document.getElementById('update-markdown-page');
   const settingsButton = document.getElementById('open-settings');
+  const tipBox = document.getElementById('tip-box');
+  const understandButton = document.getElementById('understand-button');
+
+  function setupTipBox() {
+    understandButton.addEventListener('click', () => {
+      tipBox.style.display = 'none';
+      // Optionally, you can store this preference in local storage
+      localStorage.setItem('tipBoxClosed', 'true');
+    });
+
+    // Check if the tip box should be hidden on page load
+    if (localStorage.getItem('tipBoxClosed') === 'true') {
+      tipBox.style.display = 'none';
+    }
+  }
+
+  setupTipBox();
 
   // Track open URLs to preserve state after UI update
   let openUrls = new Set();
@@ -69,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectAllCheckbox = document.createElement('input');
         selectAllCheckbox.type = 'checkbox';
         selectAllCheckbox.className = 'select-all-checkbox';
+        selectAllCheckbox.style.marginRight = '10px';
         selectAllBox.appendChild(selectAllCheckbox);
 
         const selectAllLabel = document.createElement('label');
@@ -105,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const dateCheckbox = document.createElement('input');
         dateCheckbox.type = 'checkbox';
         dateCheckbox.className = 'date-checkbox';
-        dateCheckbox.style.marginRight = '10px'; // Add space between checkbox and date header
+        dateCheckbox.style.marginRight = '15px';
         dateHeader.prepend(dateCheckbox);
 
         // Prevent checkbox click from toggling the date group
@@ -141,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const pageCheckbox = document.createElement('input');
           pageCheckbox.type = 'checkbox';
           pageCheckbox.className = 'page-checkbox';
-          pageCheckbox.style.marginRight = '10px';
+          pageCheckbox.style.marginRight = '15px';
           
           const titleContent = document.createElement('div');
           titleContent.style.flex = '1';
@@ -172,13 +190,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
           const actionButtons = document.createElement('div');
           actionButtons.style.display = 'none';
-          actionButtons.style.marginLeft = '10px';
-          actionButtons.style.position = 'relative';  // Add this line
-          actionButtons.style.zIndex = '1000';  // Add this line
+          actionButtons.style.marginLeft = '15px';
+          actionButtons.style.position = 'relative';
 
-          const copyButton = createActionButton('⎘', '#4a4a4a', () => copyEntry(item.url, item.markdown));
-          const updateButton = createActionButton('↻', '#1a5f7a', () => updateEntry(item.url));
-          const deleteButton = createActionButton('✕', '#8c0d0d', () => deleteEntry(item.url));
+          const copyButton = createActionButton('⎘', 'copy', () => copyEntry(item.url, item.markdown));
+          const updateButton = createActionButton('↻', 'update', () => updateEntry(item.url));
+          const deleteButton = createActionButton('✕', 'delete', () => deleteEntry(item.url));
 
           actionButtons.appendChild(copyButton);
           actionButtons.appendChild(updateButton);
@@ -186,9 +203,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
           const dateTimeText = document.createElement('span');
           const savedDateTime = new Date(item.savedAt);
-          dateTimeText.textContent = `${savedDateTime.toLocaleTimeString()}`;
+          dateTimeText.textContent = `${savedDateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
           dateTimeText.style.color = 'gray';
           dateTimeText.style.fontSize = '16px';
+          dateTimeText.style.fontFamily = 'monospace';
 
           rightSection.appendChild(actionButtons);
           rightSection.appendChild(dateTimeText);
@@ -715,7 +733,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function createActionButton(text, color, onClick) {
     const button = document.createElement('button');
     button.textContent = text;
-    button.style.backgroundColor = color;
+    button.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue(`--${color}-button-background`).trim();
     button.style.color = 'white';
     button.style.border = '1px solid var(--button-border)';
     button.style.borderRadius = '3px';
@@ -724,7 +742,6 @@ document.addEventListener('DOMContentLoaded', () => {
     button.style.cursor = 'pointer';
     button.style.fontSize = '14px';
     button.style.transition = 'filter 0.2s ease';
-    // Add a tooltip to show the button's function on hover
     button.title = {
       '⎘': 'Copy',
       '↻': 'Update',
@@ -736,7 +753,6 @@ document.addEventListener('DOMContentLoaded', () => {
       onClick();
     });
     
-    // Add hover effect
     button.addEventListener('mouseenter', () => {
       button.style.filter = 'brightness(115%)';
     });
@@ -766,7 +782,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (accepted) {
                   item.markdown = newMarkdown;
                   chrome.storage.local.set({ markdownData }, () => {
-                    loadMarkdownData(); // Reload the data to reflect changes
+                    loadMarkdownData();
                   });
                 }
               });
@@ -786,7 +802,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const { markdownData } = result;
       const updatedData = markdownData.filter(item => item.url !== url);
       browser.storage.local.set({ markdownData: updatedData }).then(() => {
-        loadMarkdownData(); // Reload the data to reflect changes
+        loadMarkdownData();
       }).catch((error) => {
         console.error("Error deleting markdownData:", error);
       });
@@ -799,7 +815,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const content = `<url>${url}</url>\n${markdown}`;
     navigator.clipboard.writeText(content).then(() => {
       console.log('Entry copied to clipboard');
-      // You can add a visual feedback here if needed
     }).catch((err) => {
       console.error('Error copying entry to clipboard:', err);
     });
