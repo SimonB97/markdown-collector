@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const dateHeader = document.createElement('div');
         dateHeader.className = 'date-header';
         dateHeader.textContent = date; // Display date in ISO format
-        dateHeader.style.color = 'lightgray';
+        dateHeader.style.color = 'var(--date-header-text-color)';
         dateHeader.style.paddingLeft = '11px';
         dateHeader.style.cursor = 'pointer';
 
@@ -194,8 +194,11 @@ document.addEventListener('DOMContentLoaded', () => {
           actionButtons.style.position = 'relative';
 
           const copyButton = createActionButton('⎘', 'copy', () => copyEntry(item.url, item.markdown));
+          copyButton.style.backgroundColor = 'var(--copy-button-background)';
           const updateButton = createActionButton('↻', 'update', () => updateEntry(item.url));
+          updateButton.style.backgroundColor = 'var(--update-button-background)';
           const deleteButton = createActionButton('✕', 'delete', () => deleteEntry(item.url));
+          deleteButton.style.backgroundColor = 'var(--delete-button-background)';
 
           actionButtons.appendChild(copyButton);
           actionButtons.appendChild(updateButton);
