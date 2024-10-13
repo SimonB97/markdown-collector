@@ -12,7 +12,7 @@
     "<all_urls>"
   ],
   "background": {
-    "scripts": ["background.js"]
+    "scripts": ["src/background.js"]
   },
   "browser_specific_settings": {
     "gecko": {
@@ -20,7 +20,7 @@
     }
   },
   "browser_action": {
-    "default_popup": "popup.html",
+    "default_popup": "src/popup/popup.html",
     "default_icon": {
       "48": "icons/icon48.png",
       "512": "icons/icon512.png"
@@ -48,10 +48,10 @@
     {
       "matches": ["<all_urls>"],
       "js": [
-        "libs/Readability.js",
-        "libs/turndown.min.js",
-        "content.js",
-        "fetchContent.js"
+        "src/lib/Readability.js",
+        "src/lib/turndown.min.js",
+        "src/content.js",
+        "src/fetchContent.js"
       ],
       "run_at": "document_end"
     }
@@ -59,15 +59,18 @@
   "web_accessible_resources": [
     "fonts/Atkinson-Hyperlegible-Regular-102.ttf",
     "fonts/Atkinson-Hyperlegible-Bold-102.ttf",
-    "libs/diff.min.js",
-    "libs/turndown.min.js",
-    "libs/Readability.js",
-    "settings.html",
-    "settings.js",
-    "popup.js"
+    "src/lib/diff.min.js",
+    "src/lib/turndown.min.js",
+    "src/lib/Readability.js",
+    "src/markdown/markdown.js",
+    "src/markdown/markdown.html",
+    "src/settings/settings.js",
+    "src/settings/settings.html",
+    "src/popup/popup.js",
+    "src/popup/popup.html"
   ],
   "options_ui": {
-    "page": "settings.html",
+    "page": "src/settings/settings.html",
     "open_in_tab": true
   }
 }

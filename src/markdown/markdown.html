@@ -1,17 +1,18 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Collected Markdown</title>
   <style>
     @font-face {
       font-family: 'Atkinson Hyperlegible';
-      src: url('fonts/Atkinson-Hyperlegible-Regular-102.ttf') format('truetype');
+      src: url('../../fonts/Atkinson-Hyperlegible-Regular-102.ttf') format('truetype');
       font-weight: normal;
     }
     @font-face {
       font-family: 'Atkinson Hyperlegible';
-      src: url('fonts/Atkinson-Hyperlegible-Bold-102.ttf') format('truetype');
+      src: url('../../fonts/Atkinson-Hyperlegible-Bold-102.ttf') format('truetype');
       font-weight: bold;
     }
     body {
@@ -290,15 +291,15 @@
   <button class="action-button update-button" id="update-markdown-page">↻ Update</button>
   <button class="action-button delete-button" id="delete-markdown-page">✕ Delete</button>
   <button class="settings-button" id="open-settings">
-    <img src="icons/cogwheel.png" alt="Settings">
+    <img src="../../icons/cogwheel.png" alt="Settings">
   </button>
   <div class="container" id="markdown-container">
     <!-- Dynamic content will be injected here -->
   </div>
 
   <!-- Load diff.min.js before markdown.js -->
-  <script src="libs/turndown.min.js"></script>
-  <script src="libs/diff.min.js"></script>
+  <script src="../lib/turndown.min.js"></script>
+  <script src="../lib/diff.min.js"></script>
   <script src="markdown.js"></script>
 </body>
 </html>

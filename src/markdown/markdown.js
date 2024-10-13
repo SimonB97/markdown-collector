@@ -522,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (enableCleanup) {
             // Dynamically load Readability
             const readabilityScript = document.createElement('script');
-            readabilityScript.src = chrome.runtime.getURL('libs/Readability.js');
+            readabilityScript.src = chrome.runtime.getURL('../lib/Readability.js');
             readabilityScript.onload = () => {
               const doc = new DOMParser().parseFromString(html, 'text/html');
               const reader = new Readability(doc, {
@@ -548,7 +548,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .then((html) => {
         // Inject TurndownService script
         const script = document.createElement('script');
-        script.src = chrome.runtime.getURL('libs/turndown.min.js');
+        script.src = chrome.runtime.getURL('../lib/turndown.min.js');
         document.head.appendChild(script);
 
         return new Promise((resolve) => {

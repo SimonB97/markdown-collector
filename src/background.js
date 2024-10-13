@@ -113,7 +113,7 @@ function updateMarkdownData(tab, markdown) {
 }
 
 function openMarkdownPage() {
-  const markdownUrl = chrome.runtime.getURL("markdown.html");
+  const markdownUrl = chrome.runtime.getURL("markdown/markdown.html");
 
   chrome.tabs.query({}, (tabs) => {
     const existingTab = tabs.find(tab => tab.url === markdownUrl);
@@ -185,7 +185,7 @@ function performFetch(url, sendResponse) {
   console.log(`Performing fetch for URL: ${url}`);
   
   chrome.tabs.create({ url: url, active: false }, (tab) => {
-    chrome.tabs.executeScript(tab.id, { file: "fetchContent.js" }, () => {
+    chrome.tabs.executeScript(tab.id, { file: "src/utils/fetchContent.js" }, () => {
       chrome.tabs.sendMessage(tab.id, { command: "getPageContent" }, (response) => {
         chrome.tabs.remove(tab.id);
         if (response && response.html) {
