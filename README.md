@@ -56,7 +56,9 @@ _You can customize these shortcuts in the Firefox Add-ons settings._
 
 ## Roadmap
 
-- [ ] Add copy button to each individual Markdown entry to make copying single entries frictionless.
+See [Roadmap.md](Roadmap.md).
+
+Changelog is at the end of [Roadmap.md](Roadmap.md).
 
 ## Contributing
 
@@ -79,7 +81,7 @@ Contributions are welcome! Whether it's reporting bugs, suggesting features, or 
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [GNU General Public License v3.0](LICENSE).
 
 ## Acknowledgments
 
