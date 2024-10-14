@@ -55,7 +55,7 @@
       height: 24px;
     }
     .info-container {
-      margin-top: 20px;
+      margin-top: 0px;
       font-size: 14px;
       color: var(--text-color-light);
     }
@@ -66,10 +66,12 @@
         --background-color: #ffffff;
         --text-color: #000000;
         --text-color-light: #b4b4b4;
+        --text-color-highlight: #e6b31c;
         --button-background: #f0f0f0;
         --button-hover-background: #e0e0e0;
-        --button-color: #000000;
-        --button-border: #ccc;
+        --button-color: #ffffff;
+        --button-border: #cccccc00;
+        --accordion-background: #7f7f7f34;
       }
     }
 
@@ -79,10 +81,12 @@
         --background-color: #121212;
         --text-color: #ffffff;
         --text-color-light: #b4b4b4;
-        --button-background: #333;
-        --button-hover-background: #444;
+        --text-color-highlight: #e6b41cbd;
+        --button-background: #33333388;
+        --button-hover-background: #44444485;
         --button-color: #ffffff;
-        --button-border: #444;
+        --button-border: #44444400;
+        --accordion-background: #7e7e7e11;
       }
     }
 
@@ -91,14 +95,14 @@
     }
 
     .accordion {
-      background-color: var(--button-background);
-
+      background-color: var(--accordion-background);
       color: var(--button-color);
       cursor: pointer;
       padding: 5px;
       width: 98%;
       text-align: center;
       border: 1px solid var(--button-border);
+      border-radius: 5px;
       outline: none;
       margin-top: 10px;
     }
@@ -108,7 +112,7 @@
     }
 
     .panel {
-      padding: 0 18px;
+      padding: 0 8px;
       background-color: var(--background-color);
       max-height: 0;
       overflow: hidden;
@@ -126,14 +130,16 @@
     <button id="copy-markdown">&#128203; Copy as Markdown</button>
   </div>
   
-  <button class="accordion">▼&nbsp;&nbsp;&nbsp;&nbsp;HOW TO USE&nbsp;&nbsp;&nbsp;&nbsp;▼</button>
+  <button class="accordion">How to use</button>
   <div class="panel">
     <div class="info-container">
       <p>
         <div>
-          ➣ Press "Copy as Markdown" to save the current page and copy its Markdown to the clipboard.<br>
-          ➣   Use "Alt+I" to quickly save (insert) a page without copying.<br>
-          ➣ Open the Markdown collection page to view and manage your saved URLs ("Alt+C").
+          Press <strong style="color: var(--text-color-highlight);">Copy as Markdown</strong> to save the current page and copy its Markdown to clipboard quickly.<br>
+          <hr style="border: 0; height: 1px; background-color: rgba(128, 128, 128, 0.3); margin: 5px 0;">
+          Use <strong style="color: var(--text-color-highlight);">Alt+I</strong> to quickly save (insert) a page without copying.<br>
+          <hr style="border: 0; height: 1px; background-color: rgba(128, 128, 128, 0.3); margin: 5px 0;">
+          Open the Markdown collection page to view and manage your saved URLs (<strong style="color: var(--text-color-highlight);">Alt+C</strong>).
         </div>
       </p>
     </div>
