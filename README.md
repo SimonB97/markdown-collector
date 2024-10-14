@@ -1,4 +1,4 @@
-# Markdown Collector - URL to Markdown
+# Markdown Collector - Website to Markdown
 
 A minimalistic Firefox extension that allows you to collect URLs, convert the content of each page into Markdown and copy it to your clipboard effortlessly, designed specifically for enhancing interactions with AI assistants like ChatGPT.
 
