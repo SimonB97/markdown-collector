@@ -44,8 +44,14 @@ function saveCurrentTabUrl(sendResponse) {
   chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
     if (tabs[0]) {
       const tab = tabs[0];
-      chrome.storage.local.get(['markdownData'], (result) => {
+      chrome.storage.local.get(['markdownData', 'enableLLM', 'apiKey'], (result) => {
         const markdownData = result.markdownData || [];
+        const enableLLM = result.enableLLM || false;
+        const apiKey = result.apiKey;
+        
+        console.log("LLM refinement enabled:", enableLLM);
+        console.log("API Key present:", !!apiKey);
+
         const existingIndex = markdownData.findIndex(item => item.url === tab.url);
         
         if (existingIndex !== -1) {
@@ -66,18 +72,25 @@ function saveCurrentTabUrl(sendResponse) {
             console.error("Error setting markdownData:", chrome.runtime.lastError);
           }
           // Send message to content script to convert
-          chrome.tabs.sendMessage(tab.id, { command: 'convert-to-markdown' }, (response) => {
+          chrome.tabs.sendMessage(tab.id, { command: 'convert-to-markdown' }, async (response) => {
             if (chrome.runtime.lastError) {
               console.error("Error sending message to content script:", chrome.runtime.lastError);
             }
             console.log("Received response from content script:", response);
             if (response && response.markdown) {
-              updateMarkdownData(tab, response.markdown);
+              let finalMarkdown = response.markdown;
+              if (enableLLM && response.prompt && apiKey) {
+                console.log("Refining markdown with LLM using prompt:", response.prompt);
+                finalMarkdown = await refineMDWithLLM(response.markdown, response.prompt, apiKey);
+              } else {
+                console.log("Skipping LLM refinement:", { enableLLM, hasPrompt: !!response.prompt, hasApiKey: !!apiKey });
+              }
+              updateMarkdownData(tab, finalMarkdown);
             } else {
               console.error("No markdown received from content script");
             }
             if (sendResponse) {
-              sendResponse({ status: "URL saved and conversion started" });
+              sendResponse({ status: "URL saved and conversion completed" });
             }
           });
         });
@@ -89,6 +102,77 @@ function saveCurrentTabUrl(sendResponse) {
       }
     }
   });
+}
+
+async function refineMDWithLLM(markdown, prompt, apiKey) {
+  console.log('Refining markdown with LLM. Prompt:', prompt);
+  console.log('API Key (first 4 characters):', apiKey.substring(0, 4));
+
+  const messages = [
+    { role: 'system', content: 'You are an AI assistant that refines and structures webpage content based on user prompts. Your task is to modify the given markdown content according to the user\'s instructions. While doing so, fix any markdown formatting errors and make sure the content is structured properly.' },
+    { role: 'user', content: `Refine the following markdown content based on this prompt: "${prompt}"\n\nContent:\n${markdown}` }
+  ];
+  
+  const functions = [
+    {
+      name: 'structure_content',
+      description: 'Structure the refined content',
+      parameters: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          content: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                heading: { type: 'string' },
+                text: { type: 'string' }
+              }
+            }
+          }
+        },
+        required: ['title', 'content']
+      }
+    }
+  ];
+
+  try {
+    console.log('Sending request to OpenAI');
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: messages,
+        temperature: 0.0,
+        functions: functions,
+        function_call: { name: 'structure_content' }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('Received response from OpenAI:', data);
+
+    const functionCall = data.choices[0].message.function_call;
+    if (functionCall && functionCall.name === 'structure_content') {
+      const refinedContent = JSON.parse(functionCall.arguments);
+      return jsonToMarkdown(refinedContent);
+    } else {
+      console.error('Unexpected response format from OpenAI');
+      return markdown;
+    }
+  } catch (error) {
+    console.error('Error refining content with OpenAI:', error);
+    return markdown; // Return original markdown if refinement fails
+  }
 }
 
 function updateMarkdownData(tab, markdown) {
@@ -217,3 +301,28 @@ function checkCommands() {
 }
 
 checkCommands();
+
+function jsonToMarkdown(json) {
+  let markdown = '';
+  
+  if (json.title) {
+    markdown += `# ${json.title}\n\n`;
+  }
+  
+  if (json.content) {
+    if (Array.isArray(json.content)) {
+      json.content.forEach(section => {
+        if (section.heading) {
+          markdown += `## ${section.heading}\n\n`;
+        }
+        if (section.text) {
+          markdown += `${section.text}\n\n`;
+        }
+      });
+    } else {
+      markdown += json.content;
+    }
+  }
+  
+  return markdown.trim();
+}

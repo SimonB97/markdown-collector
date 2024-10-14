@@ -24,28 +24,38 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   if (request.command === 'convert-to-markdown' && !isConverting) {
     isConverting = true;
-    browser.storage.local.get(['enableCleanup']).then((result) => {
+    browser.storage.local.get(['enableCleanup', 'enableLLM']).then(async (result) => {
       const enableCleanup = result.enableCleanup || false;
-      console.log("Content cleanup enabled:", enableCleanup);
+      const enableLLM = result.enableLLM || false;
       
-      let markdownPromise;
+      let markdown;
       if (enableCleanup && typeof Readability !== 'undefined') {
-        console.log("Converting page to markdown with cleanup");
-        markdownPromise = convertPageToMarkdownWithCleanup();
+        markdown = await convertPageToMarkdownWithCleanup();
       } else {
-        console.log("Converting page to markdown without cleanup");
-        markdownPromise = Promise.resolve(convertPageToMarkdown());
+        markdown = convertPageToMarkdown();
+      }
+
+      if (enableLLM) {
+        console.log("LLM refinement is enabled. Showing prompt popup.");
+        try {
+          const prompt = await showPromptPopup();
+          console.log("Prompt received:", prompt);
+          if (prompt) {
+            sendResponse({ markdown, prompt });
+          } else {
+            console.log("Prompt was cancelled or empty.");
+            sendResponse({ markdown });
+          }
+        } catch (error) {
+          console.error("Error showing prompt popup:", error);
+          sendResponse({ markdown });
+        }
+      } else {
+        console.log("LLM refinement is disabled. Sending markdown without prompt.");
+        sendResponse({ markdown });
       }
       
-      markdownPromise.then((markdown) => {
-        console.log("Converted markdown:", markdown.substring(0, 100) + "..."); // Log the first 100 characters of the markdown
-        sendResponse({ markdown: markdown });
-        isConverting = false;
-      }).catch((error) => {
-        console.error("Error during markdown conversion:", error);
-        sendResponse({ markdown: '' });
-        isConverting = false;
-      });
+      isConverting = false;
     }).catch((error) => {
       console.error("Error accessing storage:", error);
       sendResponse({ markdown: '' });
@@ -92,4 +102,43 @@ function convertPageToMarkdown() {
   const bodyHTML = document.body.innerHTML;
   const bodyMarkdown = turndownService.turndown(bodyHTML);
   return `# ${title}\n\n${bodyMarkdown}`;
+}
+
+function showPromptPopup() {
+  return new Promise((resolve) => {
+    console.log("Creating prompt popup");
+    const popup = document.createElement('div');
+    popup.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 20px;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      z-index: 10000;
+    `;
+    popup.innerHTML = `
+      <h3>Refine Content</h3>
+      <p>Enter a prompt to refine the content:</p>
+      <input type="text" id="refinement-prompt" style="width: 100%; margin-bottom: 10px;">
+      <button id="accept-prompt">Accept</button>
+      <button id="cancel-prompt">Cancel</button>
+    `;
+    document.body.appendChild(popup);
+
+    document.getElementById('accept-prompt').addEventListener('click', () => {
+      const prompt = document.getElementById('refinement-prompt').value;
+      document.body.removeChild(popup);
+      console.log("Prompt accepted:", prompt);
+      resolve(prompt);
+    });
+
+    document.getElementById('cancel-prompt').addEventListener('click', () => {
+      document.body.removeChild(popup);
+      console.log("Prompt cancelled");
+      resolve(null);
+    });
+  });
 }

@@ -178,6 +178,25 @@
       <span class="slider"></span>
     </label>
   </div>
+
+  <div class="setting">
+    <label for="llm-toggle">
+      Use LLM for content refinement
+      <span class="info-icon">?
+        <span class="info-popup">Enables a prompt for refining content using an AI model when saving a URL.</span>
+      </span>
+    </label>
+    <label class="toggle-switch">
+      <input type="checkbox" id="llm-toggle">
+      <span class="slider"></span>
+    </label>
+  </div>
+
+  <div class="setting" id="api-key-setting" style="display: none;">
+    <label for="api-key">OpenAI API Key</label>
+    <input type="password" id="api-key" placeholder="Enter your OpenAI API key">
+    <button id="save-api-key">Save</button>
+  </div>
   
   <script src="settings.js"></script>
 </body>

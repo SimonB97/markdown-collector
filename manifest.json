@@ -9,10 +9,12 @@
     "storage",
     "clipboardWrite",
     "webRequest",
-    "<all_urls>"
+    "<all_urls>",
+    "https://api.openai.com/"
   ],
   "background": {
-    "scripts": ["background.js"]
+    "scripts": ["background.js"],
+    "type": "module"
   },
   "browser_specific_settings": {
     "gecko": {
