@@ -434,7 +434,6 @@ function revertMarkdownData(tab) {
     });
   });
 }
-
 function copyAsMarkdown() {
   chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
     if (tabs[0]) {
@@ -451,45 +450,25 @@ function copyAsMarkdown() {
             return; // Exit the function silently if cancelled
           }
 
-          const markdownText = `<url>${tab.url}</url>\n<title>${tab.title}</title>\n${response.markdown}`;
+          let finalMarkdown = response.markdown;
           
-          // Save to collection
-          chrome.storage.local.get(['markdownData'], (result) => {
-            const markdownData = result.markdownData || [];
-            const existingIndex = markdownData.findIndex(item => item.url === tab.url);
-            
-            if (existingIndex !== -1) {
-              markdownData[existingIndex] = {
-                ...markdownData[existingIndex],
-                markdown: response.markdown,
-                savedAt: new Date().toISOString()
-              };
-            } else {
-              markdownData.push({
-                url: tab.url,
-                title: tab.title,
-                markdown: response.markdown,
-                savedAt: new Date().toISOString()
-              });
-            }
-            
-            chrome.storage.local.set({ markdownData }, () => {
-              if (chrome.runtime.lastError) {
-                console.error("Error saving markdownData:", chrome.runtime.lastError);
+          // Check if LLM refinement is enabled and a prompt was provided
+          if (response.prompt) {
+            chrome.storage.local.get(['enableLLM', 'apiKey'], async (result) => {
+              const enableLLM = result.enableLLM || false;
+              const apiKey = result.apiKey;
+              
+              if (enableLLM && apiKey) {
+                console.log("Refining markdown with LLM using prompt:", response.prompt);
+                finalMarkdown = await refineMDWithLLM(response.markdown, response.prompt, apiKey);
               } else {
-                console.log("Markdown data saved successfully");
+                console.log("Skipping LLM refinement:", { enableLLM, hasApiKey: !!apiKey });
               }
+              
+              proceedWithCopyAndSave(tab, finalMarkdown);
             });
-          });
-
-          // Copy to clipboard
-          try {
-            await navigator.clipboard.writeText(markdownText);
-            console.log("Markdown copied to clipboard");
-            chrome.tabs.sendMessage(tab.id, { command: 'show-notification', message: 'Markdown copied to clipboard and saved' });
-          } catch (err) {
-            console.error('Failed to copy to clipboard:', err);
-            chrome.tabs.sendMessage(tab.id, { command: 'show-notification', message: 'Failed to copy to clipboard, but Markdown was saved', type: 'warning' });
+          } else {
+            proceedWithCopyAndSave(tab, finalMarkdown);
           }
         } else {
           console.error("No markdown received from content script");
@@ -500,4 +479,48 @@ function copyAsMarkdown() {
       console.error("No active tab found");
     }
   });
+}
+
+function proceedWithCopyAndSave(tab, markdown) {
+  const markdownText = `<url>${tab.url}</url>\n<title>${tab.title}</title>\n${markdown}`;
+  
+  // Save to collection
+  chrome.storage.local.get(['markdownData'], (result) => {
+    const markdownData = result.markdownData || [];
+    const existingIndex = markdownData.findIndex(item => item.url === tab.url);
+    
+    if (existingIndex !== -1) {
+      markdownData[existingIndex] = {
+        ...markdownData[existingIndex],
+        markdown: markdown,
+        savedAt: new Date().toISOString()
+      };
+    } else {
+      markdownData.push({
+        url: tab.url,
+        title: tab.title,
+        markdown: markdown,
+        savedAt: new Date().toISOString()
+      });
+    }
+    
+    chrome.storage.local.set({ markdownData }, () => {
+      if (chrome.runtime.lastError) {
+        console.error("Error saving markdownData:", chrome.runtime.lastError);
+      } else {
+        console.log("Markdown data saved successfully");
+      }
+    });
+  });
+
+  // Copy to clipboard
+  navigator.clipboard.writeText(markdownText)
+    .then(() => {
+      console.log("Markdown copied to clipboard");
+      chrome.tabs.sendMessage(tab.id, { command: 'show-notification', message: 'Markdown copied to clipboard and saved' });
+    })
+    .catch(err => {
+      console.error('Failed to copy to clipboard:', err);
+      chrome.tabs.sendMessage(tab.id, { command: 'show-notification', message: 'Failed to copy to clipboard, but Markdown was saved', type: 'warning' });
+    });
 }
