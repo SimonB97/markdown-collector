@@ -597,7 +597,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const modal = document.createElement('div');
     modal.className = 'diff-modal';
 
-    // Close button
+    // Close button for the entire modal
     const closeButton = document.createElement('button');
     closeButton.className = 'close-button';
     closeButton.innerHTML = '&times;';
@@ -607,30 +607,54 @@ document.addEventListener('DOMContentLoaded', () => {
       document.body.removeChild(modalOverlay);
     });
 
-    // Append close button to modalOverlay instead of modal
     modalOverlay.appendChild(closeButton);
 
+    // Function to create a closable info box
+    function createClosableInfoBox(className, content, storageKey) {
+      const box = document.createElement('div');
+      box.className = `info-box ${className}`;
+      
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = 'I understand!';
+      closeBtn.className = 'info-box-close';
+      closeBtn.addEventListener('click', () => {
+        box.style.display = 'none';
+        localStorage.setItem(storageKey, 'closed');
+      });
+      
+      const contentDiv = document.createElement('div');
+      contentDiv.innerHTML = content;
+      box.appendChild(contentDiv);
+      box.appendChild(closeBtn);
+      
+      if (localStorage.getItem(storageKey) === 'closed') {
+        box.style.display = 'none';
+      }
+      
+      return box;
+    }
+
     // Beta notice box
-    const betaNoticeBox = document.createElement('div');
-    betaNoticeBox.className = 'info-box beta-notice';
-    betaNoticeBox.innerHTML = `
-      <p><strong>Notice:</strong> The update function is currently in beta. Due to cross-origin limitations, 
+    const betaNoticeBox = createClosableInfoBox(
+      'beta-notice',
+      `<p><strong>Notice:</strong> The update function is currently in beta. Due to cross-origin limitations, 
       website contents are fetched in XML format, which may introduce slight variations in how basic structural elements, 
       headers, or similar content are scraped. These differences are indicated in red or green in the diff below, 
-      but are generally negligible.</p>
-    `;
+      but are generally negligible.</p>`,
+      'betaNoticeClosed'
+    );
     modal.appendChild(betaNoticeBox);
 
     // Diff instructions box
-    const diffInstructionsBox = document.createElement('div');
-    diffInstructionsBox.className = 'info-box diff-instructions';
-    diffInstructionsBox.innerHTML = `
-      <p><strong>How to read the diff:</strong></p>
+    const diffInstructionsBox = createClosableInfoBox(
+      'diff-instructions',
+      `<p><strong>How to read the diff:</strong></p>
       <p><span style="color: green;">Green text</span> indicates content that has been added.</p>
       <p><span style="color: red;">Red text</span> indicates content that has been removed.</p>
       <p><span style="color: grey;">Grey text</span> indicates unchanged content.</p>
-      <p>At the bottom of this diff, you'll find buttons to either accept or decline the changes.</p>
-    `;
+      <p>At the bottom of this diff, you'll find buttons to either accept or decline the changes.</p>`,
+      'diffInstructionsClosed'
+    );
     modal.appendChild(diffInstructionsBox);
 
     const diff = Diff.diffLines(oldMarkdown, newMarkdown);

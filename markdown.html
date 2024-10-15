@@ -224,9 +224,9 @@
     }
 
     .diff-modal .info-box {
-      margin-bottom: 15px;
-      padding: 10px;
       border-radius: 4px;
+      box-sizing: border-box; /* Include padding in width calculation */
+      position: relative;
     }
 
     .diff-modal .beta-notice {
@@ -269,16 +269,11 @@
     }
 
     .diff-modal button {
-      margin-top: 10px;
-      margin-right: 10px;
+      margin: 10px;
       padding: 5px 10px;
       border: none;
       border-radius: 4px;
       cursor: pointer;
-    }
-
-    .diff-modal .info-box {
-      position: relative; /* Add this */
     }
 
     .header-container {
@@ -289,23 +284,25 @@
     }
 
     .info-box {
-      background: linear-gradient(135deg, #4476a1df, #297f7fda);
       border: none;
       border-radius: 8px;
       padding: 15px;
       font-size: 14px;
-      max-width: 300px;
-      margin-right: 50px;
+      margin-top: 10px;
+      margin-bottom: 20px;
       z-index: 1;
-      position: fixed;
-      top: 80px;
-      right: 20px;
       color: white;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
-
-    .info-box p {
-      margin: 0 0 10px 0;
+    
+    #tip-box {
+      background: linear-gradient(135deg, #4476a1df, #297f7fda);
+      position: fixed;
+      top: 80px;
+      padding-top: 0px;
+      right: 50px;
+      width: max-content; /* Adjust width as needed */
+      max-width: calc(100% - 40px); /* Ensure it doesn't overflow on small screens */
     }
 
     .understand-button {

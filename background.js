@@ -67,6 +67,7 @@ function saveCurrentTabUrl(sendResponse) {
               if (sendResponse) {
                 sendResponse({ status: "Save process cancelled" });
               }
+              return; // Exit the function early if cancelled
             } else {
               let finalMarkdown = response.markdown;
               if (enableLLM && response.prompt && apiKey) {
@@ -445,6 +446,11 @@ function copyAsMarkdown() {
         }
         
         if (response && response.markdown) {
+          if (response.cancelled) {
+            console.log("Copy process was cancelled by the user");
+            return; // Exit the function silently if cancelled
+          }
+
           const markdownText = `<url>${tab.url}</url>\n<title>${tab.title}</title>\n${response.markdown}`;
           
           // Save to collection
