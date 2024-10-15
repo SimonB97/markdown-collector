@@ -38,13 +38,14 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (enableLLM) {
         console.log("LLM refinement is enabled. Showing prompt popup.");
         try {
-          const prompt = await showPromptPopup();
-          console.log("Prompt received:", prompt);
-          if (prompt) {
-            sendResponse({ markdown, prompt });
-          } else {
-            console.log("Prompt was cancelled or empty.");
+          const response = await showPromptPopup();
+          console.log("Popup response:", response);
+          if (response.action === 'refine') {
+            sendResponse({ markdown, prompt: response.prompt });
+          } else if (response.action === 'save') {
             sendResponse({ markdown });
+          } else if (response.action === 'cancel') {
+            sendResponse({ markdown, cancelled: true });
           }
         } catch (error) {
           console.error("Error showing prompt popup:", error);
@@ -110,21 +111,82 @@ function showPromptPopup() {
     const popup = document.createElement('div');
     popup.style.cssText = `
       position: fixed;
-      top: 50%;
-      left: 50%;
+      top: 30%;
+      left: 70%;
       transform: translate(-50%, -50%);
-      background: white;
+      background: var(--background-color);
+      color: var(--text-color);
       padding: 20px;
       border-radius: 5px;
+      border: 1px solid var(--button-border);
       box-shadow: 0 0 10px rgba(0,0,0,0.3);
       z-index: 10000;
+      font-family: 'Atkinson Hyperlegible', Arial, sans-serif;
+      width: 550px;
     `;
     popup.innerHTML = `
+      <style>
+        @font-face {
+          font-family: 'Atkinson Hyperlegible';
+          src: url('${browser.runtime.getURL('fonts/Atkinson-Hyperlegible-Regular-102.ttf')}') format('truetype');
+          font-weight: normal;
+        }
+        @font-face {
+          font-family: 'Atkinson Hyperlegible';
+          src: url('${browser.runtime.getURL('fonts/Atkinson-Hyperlegible-Bold-102.ttf')}') format('truetype');
+          font-weight: bold;
+        }
+        :root {
+          --background-color: ${window.matchMedia('(prefers-color-scheme: dark)').matches ? '#121212' : '#ffffff'};
+          --text-color: ${window.matchMedia('(prefers-color-scheme: dark)').matches ? '#ffffff' : '#000000'};
+          --button-background: ${window.matchMedia('(prefers-color-scheme: dark)').matches ? '#33333388' : '#f0f0f0'};
+          --button-hover-background: ${window.matchMedia('(prefers-color-scheme: dark)').matches ? '#44444485' : '#e0e0e0'};
+          --button-color: ${window.matchMedia('(prefers-color-scheme: dark)').matches ? '#ffffff' : '#000000'};
+          --button-border: ${window.matchMedia('(prefers-color-scheme: dark)').matches ? '#444444' : '#cccccc'};
+        }
+        h3 {
+          margin-top: 0;
+          color: var(--text-color);
+        }
+        input, button {
+          font-family: 'Atkinson Hyperlegible', Arial, sans-serif;
+          padding: 8px;
+          margin: 5px 2px;
+          border-radius: 4px;
+        }
+        input {
+          width: calc(99%);
+          background-color: #ffffff11;
+          color: var(--text-color);
+          border: 0px;
+        }
+        button {
+          background-color: var(--button-background);
+          color: var(--button-color);
+          border: 0px;
+          cursor: pointer;
+        }
+        button:hover {
+          background-color: var(--button-hover-background);
+        }
+        .button-container {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 10px;
+        }
+        button {
+          flex: 1;
+          margin: 0 5px;
+        }
+      </style>
       <h3>Refine Content</h3>
       <p>Enter a prompt to refine the content:</p>
-      <input type="text" id="refinement-prompt" style="width: 100%; margin-bottom: 10px;">
-      <button id="accept-prompt">Accept</button>
-      <button id="cancel-prompt">Cancel</button>
+      <input type="text" id="refinement-prompt">
+      <div class="button-container">
+        <button id="accept-prompt">Accept</button>
+        <button id="save-without-refine">Save Without Refining</button>
+        <button id="cancel-save">Cancel Save</button>
+      </div>
     `;
     document.body.appendChild(popup);
 
@@ -132,13 +194,19 @@ function showPromptPopup() {
       const prompt = document.getElementById('refinement-prompt').value;
       document.body.removeChild(popup);
       console.log("Prompt accepted:", prompt);
-      resolve(prompt);
+      resolve({ action: 'refine', prompt });
     });
 
-    document.getElementById('cancel-prompt').addEventListener('click', () => {
+    document.getElementById('save-without-refine').addEventListener('click', () => {
       document.body.removeChild(popup);
-      console.log("Prompt cancelled");
-      resolve(null);
+      console.log("Saving without refinement");
+      resolve({ action: 'save' });
+    });
+
+    document.getElementById('cancel-save').addEventListener('click', () => {
+      document.body.removeChild(popup);
+      console.log("Save process cancelled");
+      resolve({ action: 'cancel' });
     });
   });
 }

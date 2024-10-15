@@ -53,46 +53,64 @@ function saveCurrentTabUrl(sendResponse) {
         console.log("API Key present:", !!apiKey);
 
         const existingIndex = markdownData.findIndex(item => item.url === tab.url);
+        let isNewEntry = existingIndex === -1;
         
-        if (existingIndex !== -1) {
-          markdownData[existingIndex].isLoading = true;
-          markdownData[existingIndex].savedAt = new Date().toISOString();
-        } else {
-          markdownData.push({
-            url: tab.url,
-            title: tab.title,
-            markdown: "",
-            isLoading: true,
-            savedAt: new Date().toISOString()
-          });
-        }
-        
-        chrome.storage.local.set({ markdownData }, () => {
+        // Send message to content script to convert
+        chrome.tabs.sendMessage(tab.id, { command: 'convert-to-markdown' }, async (response) => {
           if (chrome.runtime.lastError) {
-            console.error("Error setting markdownData:", chrome.runtime.lastError);
+            console.error("Error sending message to content script:", chrome.runtime.lastError);
           }
-          // Send message to content script to convert
-          chrome.tabs.sendMessage(tab.id, { command: 'convert-to-markdown' }, async (response) => {
-            if (chrome.runtime.lastError) {
-              console.error("Error sending message to content script:", chrome.runtime.lastError);
-            }
-            console.log("Received response from content script:", response);
-            if (response && response.markdown) {
+          console.log("Received response from content script:", response);
+          if (response && response.markdown) {
+            if (response.cancelled) {
+              console.log("Save process was cancelled by the user");
+              if (sendResponse) {
+                sendResponse({ status: "Save process cancelled" });
+              }
+            } else {
               let finalMarkdown = response.markdown;
               if (enableLLM && response.prompt && apiKey) {
                 console.log("Refining markdown with LLM using prompt:", response.prompt);
                 finalMarkdown = await refineMDWithLLM(response.markdown, response.prompt, apiKey);
+              } else if (response.prompt === undefined) {
+                console.log("Saving without LLM refinement");
               } else {
                 console.log("Skipping LLM refinement:", { enableLLM, hasPrompt: !!response.prompt, hasApiKey: !!apiKey });
               }
-              updateMarkdownData(tab, finalMarkdown);
-            } else {
-              console.error("No markdown received from content script");
+              
+              let updatedMarkdownData = [...markdownData];
+              if (isNewEntry) {
+                updatedMarkdownData.push({
+                  url: tab.url,
+                  title: tab.title,
+                  markdown: finalMarkdown,
+                  savedAt: new Date().toISOString()
+                });
+              } else {
+                updatedMarkdownData[existingIndex] = {
+                  ...updatedMarkdownData[existingIndex],
+                  markdown: finalMarkdown,
+                  savedAt: new Date().toISOString()
+                };
+              }
+              
+              chrome.storage.local.set({ markdownData: updatedMarkdownData }, () => {
+                if (chrome.runtime.lastError) {
+                  console.error("Error setting markdownData:", chrome.runtime.lastError);
+                } else {
+                  console.log("Markdown data updated successfully");
+                }
+                if (sendResponse) {
+                  sendResponse({ status: "URL save process completed" });
+                }
+              });
             }
+          } else {
+            console.error("No markdown received from content script");
             if (sendResponse) {
-              sendResponse({ status: "URL saved and conversion completed" });
+              sendResponse({ status: "Error: No markdown received" });
             }
-          });
+          }
         });
       });
     } else {
@@ -109,7 +127,7 @@ async function refineMDWithLLM(markdown, prompt, apiKey) {
   console.log('API Key (first 4 characters):', apiKey.substring(0, 4));
 
   const messages = [
-    { role: 'system', content: 'You are an AI assistant that refines and structures webpage content based on user prompts. Your task is to modify the given markdown content according to the user\'s instructions. While doing so, fix any markdown formatting errors and make sure the content is structured properly.' },
+    { role: 'system', content: 'You are an AI assistant that refines and structures webpage content based on user prompts. Your task is to modify the given markdown content according to the user\'s instructions.' },
     { role: 'user', content: `Refine the following markdown content based on this prompt: "${prompt}"\n\nContent:\n${markdown}` }
   ];
   
@@ -126,9 +144,27 @@ async function refineMDWithLLM(markdown, prompt, apiKey) {
             items: {
               type: 'object',
               properties: {
-                heading: { type: 'string' },
-                text: { type: 'string' }
-              }
+                type: { 
+                  type: 'string',
+                  enum: ['heading', 'paragraph', 'list', 'code', 'quote']
+                },
+                content: {
+                  oneOf: [
+                    { type: 'string' },
+                    { 
+                      type: 'array',
+                      items: { type: 'string' }
+                    }
+                  ]
+                },
+                level: { 
+                  type: 'integer',
+                  minimum: 1,
+                  maximum: 6
+                },
+                language: { type: 'string' }
+              },
+              required: ['type', 'content']
             }
           }
         },
@@ -139,16 +175,21 @@ async function refineMDWithLLM(markdown, prompt, apiKey) {
 
   try {
     console.log('Sending request to OpenAI');
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    
+    // Fetch the model and baseUrl from storage
+    const { model, baseUrl } = await new Promise((resolve) => {
+      chrome.storage.local.get(['model', 'baseUrl'], resolve);
+    });
+
+    const response = await fetch(baseUrl || 'https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: model || 'gpt-4o-mini',
         messages: messages,
-        temperature: 0.0,
         functions: functions,
         function_call: { name: 'structure_content' }
       })
@@ -309,20 +350,72 @@ function jsonToMarkdown(json) {
     markdown += `# ${json.title}\n\n`;
   }
   
-  if (json.content) {
-    if (Array.isArray(json.content)) {
-      json.content.forEach(section => {
-        if (section.heading) {
-          markdown += `## ${section.heading}\n\n`;
-        }
-        if (section.text) {
-          markdown += `${section.text}\n\n`;
-        }
-      });
-    } else {
-      markdown += json.content;
-    }
+  if (json.content && Array.isArray(json.content)) {
+    json.content.forEach(item => {
+      switch (item.type) {
+        case 'heading':
+          const level = item.level || 2;
+          markdown += `${'#'.repeat(level)} ${item.content}\n\n`;
+          break;
+        case 'paragraph':
+          markdown += `${item.content}\n\n`;
+          break;
+        case 'list':
+          if (Array.isArray(item.content)) {
+            item.content.forEach(listItem => {
+              markdown += `- ${listItem}\n`;
+            });
+            markdown += '\n';
+          }
+          break;
+        case 'code':
+          if (item.language) {
+            markdown += `\`\`\`${item.language}\n${item.content}\n\`\`\`\n\n`;
+          } else {
+            markdown += `\`\`\`\n${item.content}\n\`\`\`\n\n`;
+          }
+          break;
+        case 'quote':
+          markdown += `> ${item.content}\n\n`;
+          break;
+        default:
+          markdown += `${item.content}\n\n`;
+      }
+    });
   }
   
   return markdown.trim();
+}
+
+function removeMarkdownData(tab) {
+  chrome.storage.local.get(['markdownData'], (result) => {
+    const markdownData = result.markdownData || [];
+    const updatedMarkdownData = markdownData.filter(item => item.url !== tab.url);
+    chrome.storage.local.set({ markdownData: updatedMarkdownData }, () => {
+      if (chrome.runtime.lastError) {
+        console.error("Error removing markdownData:", chrome.runtime.lastError);
+      } else {
+        console.log("Markdown data removed successfully");
+      }
+    });
+  });
+}
+
+function revertMarkdownData(tab) {
+  chrome.storage.local.get(['markdownData'], (result) => {
+    const markdownData = result.markdownData || [];
+    const updatedMarkdownData = markdownData.map(item => {
+      if (item.url === tab.url) {
+        return { ...item, isLoading: false };
+      }
+      return item;
+    });
+    chrome.storage.local.set({ markdownData: updatedMarkdownData }, () => {
+      if (chrome.runtime.lastError) {
+        console.error("Error reverting markdownData:", chrome.runtime.lastError);
+      } else {
+        console.log("Markdown data reverted successfully");
+      }
+    });
+  });
 }

@@ -2,3 +2,4 @@
 context-collector.zip
 .env
 .aider*
+.cursorignore

@@ -21,16 +21,28 @@ document.addEventListener('DOMContentLoaded', () => {
   const llmToggle = document.getElementById('llm-toggle');
   const apiKeyInput = document.getElementById('api-key');
   const saveApiKeyButton = document.getElementById('save-api-key');
-  const apiKeySetting = document.getElementById('api-key-setting');
+  const modelSelect = document.getElementById('model-select');
+  const customModel = document.getElementById('custom-model');
+  const baseUrlInput = document.getElementById('base-url');
+  const saveBaseUrlButton = document.getElementById('save-base-url');
+  const subSettingsContainer = document.querySelector('.sub-settings-container');
 
-  // Initialize toggles
-  chrome.storage.local.get(['enableCleanup', 'enableLLM', 'apiKey'], (result) => {
+  // Initialize settings
+  chrome.storage.local.get(['enableCleanup', 'enableLLM', 'apiKey', 'model', 'baseUrl'], (result) => {
     cleanupToggle.checked = result.enableCleanup || false;
     llmToggle.checked = result.enableLLM || false;
     apiKeyInput.value = result.apiKey || '';
+    if (result.model && !['gpt-4o-mini', 'gpt-4o'].includes(result.model)) {
+      modelSelect.value = 'custom';
+      customModel.value = result.model;
+    } else {
+      modelSelect.value = result.model || 'gpt-4o-mini';
+    }
+    baseUrlInput.value = result.baseUrl || 'https://api.openai.com/v1/chat/completions';
     updateToggleVisually(cleanupToggle);
     updateToggleVisually(llmToggle);
-    apiKeySetting.style.display = result.enableLLM ? 'block' : 'none';
+    subSettingsContainer.style.display = result.enableLLM ? 'block' : 'none';
+    updateModelInputVisibility();
   });
 
   cleanupToggle.addEventListener('change', () => {
@@ -46,9 +58,16 @@ document.addEventListener('DOMContentLoaded', () => {
     chrome.storage.local.set({ enableLLM: isEnabled }, () => {
       console.log(`LLM Refinement ${isEnabled ? 'enabled' : 'disabled'}`);
       updateToggleVisually(llmToggle);
-      apiKeySetting.style.display = isEnabled ? 'block' : 'none';
+      subSettingsContainer.style.display = isEnabled ? 'block' : 'none';
     });
   });
+
+  modelSelect.addEventListener('change', () => {
+    updateModelInputVisibility();
+    saveModel();
+  });
+
+  customModel.addEventListener('input', saveModel);
 
   saveApiKeyButton.addEventListener('click', () => {
     const apiKey = apiKeyInput.value.trim();
@@ -57,6 +76,39 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('API Key saved successfully!');
     });
   });
+
+  saveBaseUrlButton.addEventListener('click', () => {
+    const baseUrl = baseUrlInput.value.trim();
+    chrome.storage.local.set({ baseUrl }, () => {
+      console.log('Base URL saved');
+      alert('Base URL saved successfully!');
+    });
+  });
+
+  function updateModelInputVisibility() {
+    if (modelSelect.value === 'custom') {
+      customModel.style.display = 'inline-block';
+    } else {
+      customModel.style.display = 'none';
+    }
+  }
+
+  function saveModel() {
+    let model;
+
+    if (modelSelect.value === 'custom') {
+      model = customModel.value.trim();
+      if (!model) {
+        model = 'gpt-4o-mini'; // Default if custom is empty
+      }
+    } else {
+      model = modelSelect.value;
+    }
+
+    chrome.storage.local.set({ model }, () => {
+      console.log('Model saved:', model);
+    });
+  }
 });
 
 // Function to update the toggle's visual state
