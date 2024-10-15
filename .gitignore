@@ -3,3 +3,4 @@ context-collector.zip
 .env
 .aider*
 .cursorignore
+node_modules/
