@@ -99,6 +99,11 @@ function saveCurrentTabUrl(sendResponse) {
                   console.error("Error setting markdownData:", chrome.runtime.lastError);
                 } else {
                   console.log("Markdown data updated successfully");
+                  // Show notification
+                  chrome.tabs.sendMessage(tab.id, { 
+                    command: 'show-notification', 
+                    message: isNewEntry ? 'URL saved successfully' : 'URL updated successfully'
+                  });
                 }
                 if (sendResponse) {
                   sendResponse({ status: "URL save process completed" });
@@ -110,6 +115,12 @@ function saveCurrentTabUrl(sendResponse) {
             if (sendResponse) {
               sendResponse({ status: "Error: No markdown received" });
             }
+            // Show error notification
+            chrome.tabs.sendMessage(tab.id, { 
+              command: 'show-notification', 
+              message: 'Failed to save URL', 
+              type: 'error'
+            });
           }
         });
       });
@@ -332,6 +343,9 @@ chrome.commands.onCommand.addListener((command) => {
   } else if (command === "open-markdown-page") {
     console.log("Executing open-markdown-page command");
     openMarkdownPage();
+  } else if (command === "copy-as-markdown") {
+    console.log("Executing copy-as-markdown command");
+    copyAsMarkdown();
   }
 });
 
@@ -417,5 +431,67 @@ function revertMarkdownData(tab) {
         console.log("Markdown data reverted successfully");
       }
     });
+  });
+}
+
+function copyAsMarkdown() {
+  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+    if (tabs[0]) {
+      const tab = tabs[0];
+      chrome.tabs.sendMessage(tab.id, { command: 'convert-to-markdown' }, async (response) => {
+        if (chrome.runtime.lastError) {
+          console.error("Error sending message to content script:", chrome.runtime.lastError);
+          return;
+        }
+        
+        if (response && response.markdown) {
+          const markdownText = `<url>${tab.url}</url>\n<title>${tab.title}</title>\n${response.markdown}`;
+          
+          // Save to collection
+          chrome.storage.local.get(['markdownData'], (result) => {
+            const markdownData = result.markdownData || [];
+            const existingIndex = markdownData.findIndex(item => item.url === tab.url);
+            
+            if (existingIndex !== -1) {
+              markdownData[existingIndex] = {
+                ...markdownData[existingIndex],
+                markdown: response.markdown,
+                savedAt: new Date().toISOString()
+              };
+            } else {
+              markdownData.push({
+                url: tab.url,
+                title: tab.title,
+                markdown: response.markdown,
+                savedAt: new Date().toISOString()
+              });
+            }
+            
+            chrome.storage.local.set({ markdownData }, () => {
+              if (chrome.runtime.lastError) {
+                console.error("Error saving markdownData:", chrome.runtime.lastError);
+              } else {
+                console.log("Markdown data saved successfully");
+              }
+            });
+          });
+
+          // Copy to clipboard
+          try {
+            await navigator.clipboard.writeText(markdownText);
+            console.log("Markdown copied to clipboard");
+            chrome.tabs.sendMessage(tab.id, { command: 'show-notification', message: 'Markdown copied to clipboard and saved' });
+          } catch (err) {
+            console.error('Failed to copy to clipboard:', err);
+            chrome.tabs.sendMessage(tab.id, { command: 'show-notification', message: 'Failed to copy to clipboard, but Markdown was saved', type: 'warning' });
+          }
+        } else {
+          console.error("No markdown received from content script");
+          chrome.tabs.sendMessage(tab.id, { command: 'show-notification', message: 'Failed to generate Markdown', type: 'error' });
+        }
+      });
+    } else {
+      console.error("No active tab found");
+    }
   });
 }

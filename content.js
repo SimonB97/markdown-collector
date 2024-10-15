@@ -63,6 +63,8 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
       isConverting = false;
     });
     return true; // Indicates asynchronous response
+  } else if (request.command === 'show-notification') {
+    showNotification(request.message, request.type);
   }
   return false;
 });
@@ -166,6 +168,12 @@ function showPromptPopup() {
           border: 0px;
           cursor: pointer;
         }
+        button span {
+          display: block;
+          font-size: 0.8em;
+          color: var(--text-color-light);
+          margin-top: 2px;
+        }
         button:hover {
           background-color: var(--button-hover-background);
         }
@@ -183,30 +191,81 @@ function showPromptPopup() {
       <p>Enter a prompt to refine the content:</p>
       <input type="text" id="refinement-prompt">
       <div class="button-container">
-        <button id="accept-prompt">Accept</button>
-        <button id="save-without-refine">Save Without Refining</button>
-        <button id="cancel-save">Cancel Save</button>
+        <button id="accept-prompt">Refine<span>(Enter)</span></button>
+        <button id="save-without-refine">Save<span>(Enter with empty prompt)</span></button>
+        <button id="cancel-save">Cancel<span>(Esc)</span></button>
       </div>
     `;
     document.body.appendChild(popup);
 
-    document.getElementById('accept-prompt').addEventListener('click', () => {
-      const prompt = document.getElementById('refinement-prompt').value;
+    const promptInput = document.getElementById('refinement-prompt');
+    const acceptButton = document.getElementById('accept-prompt');
+    const saveWithoutRefineButton = document.getElementById('save-without-refine');
+    const cancelButton = document.getElementById('cancel-save');
+
+    function acceptPrompt() {
+      const prompt = promptInput.value;
       document.body.removeChild(popup);
       console.log("Prompt accepted:", prompt);
       resolve({ action: 'refine', prompt });
-    });
+    }
 
-    document.getElementById('save-without-refine').addEventListener('click', () => {
+    function saveWithoutRefining() {
       document.body.removeChild(popup);
       console.log("Saving without refinement");
       resolve({ action: 'save' });
-    });
+    }
 
-    document.getElementById('cancel-save').addEventListener('click', () => {
+    function cancelSave() {
       document.body.removeChild(popup);
       console.log("Save process cancelled");
       resolve({ action: 'cancel' });
+    }
+
+    acceptButton.addEventListener('click', acceptPrompt);
+    saveWithoutRefineButton.addEventListener('click', saveWithoutRefining);
+    cancelButton.addEventListener('click', cancelSave);
+
+    // Handle keyboard events
+    promptInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        if (promptInput.value.trim()) {
+          acceptPrompt();
+        } else {
+          saveWithoutRefining();
+        }
+      }
     });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        cancelSave();
+      }
+    });
+
+    // Focus the input field when the popup is shown
+    promptInput.focus();
   });
+}
+
+function showNotification(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.textContent = message;
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    background-color: ${type === 'error' ? '#ff4444' : '#27ae60'};
+    color: white;
+    border-radius: 5px;
+    z-index: 10000;
+    font-family: Arial, sans-serif;
+  `;
+  document.body.appendChild(notification);
+  setTimeout(() => {
+    document.body.removeChild(notification);
+  }, 3000);
 }

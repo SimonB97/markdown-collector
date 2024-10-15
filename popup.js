@@ -23,8 +23,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const statusMessage = document.getElementById('status-message');
 
   // Update initial button labels
-  openMarkdownButton.innerHTML = '<span style="font-size: 2em;">&#8599;</span><br>Open Collection';
-  copyMarkdownButton.innerHTML = '<span style="font-size: 2em;">&#128203;</span><br>Copy as Markdown';
+  openMarkdownButton.innerHTML = `
+    <span style="font-size: 2em;">&#8599;</span><br>
+    Open Collection
+    <span class="shortcut-hint">Alt+M</span>
+  `;
+  copyMarkdownButton.innerHTML = `
+    <span style="font-size: 2em;">&#128203;</span><br>
+    Copy as Markdown
+    <span class="shortcut-hint">Alt+C</span>
+  `;
 
   openMarkdownButton.addEventListener('click', () => {
     chrome.runtime.sendMessage({ command: 'open-markdown-page' }, (response) => {
@@ -46,9 +54,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (currentPageData && currentPageData.markdown) {
                   const markdownText = `<url>${currentPageData.url}</url>\n<title>${currentPageData.title}</title>\n${currentPageData.markdown}`;
                   navigator.clipboard.writeText(markdownText).then(() => {
-                    copyMarkdownButton.textContent = '✓ Copied';
+                    copyMarkdownButton.innerHTML = `
+                      <span style="font-size: 2em;">&#10004;</span><br>
+                      Copied
+                      <span class="shortcut-hint">Alt+C</span>
+                    `;
                     setTimeout(() => {
-                      copyMarkdownButton.textContent = '📋 Copy as Markdown';
+                      copyMarkdownButton.innerHTML = `
+                        <span style="font-size: 2em;">&#128203;</span><br>
+                        Copy as Markdown
+                        <span class="shortcut-hint">Alt+C</span>
+                      `;
                     }, 2000); // Reset button text after 2 seconds
                   }).catch((err) => {
                     console.error('Error copying to clipboard:', err);

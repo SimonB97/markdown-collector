@@ -37,7 +37,7 @@ _or (for developrs)_
 
 2. **View and Manage Collected Markdown:**
 
-   - Press the keyboard shortcut `Alt+C` or click the extension icon and select **"Open Collection"** to view all saved URLs and their Markdown content.
+   - Press the keyboard shortcut `Alt+M` or click the extension icon and select **"Open Collection"** to view all saved URLs and their Markdown content.
    - In the collection page, you can:
      - **Edit Markdown:** Click inside a Markdown box to edit its content. Changes are saved automatically.
      - **Copy Markdown:** Select desired entries and click the **"Copy"** button to copy the concatenated Markdown to your clipboard, ready for pasting into AI chats.
@@ -50,7 +50,7 @@ _or (for developrs)_
 ## Keyboard Shortcuts
 
 - **Save Current URL and Convert to Markdown:** `Alt+I`
-- **Open Markdown Collection Page:** `Alt+C`
+- **Open Markdown Collection Page:** `Alt+M`
 
 _You can customize these shortcuts in the Firefox Add-ons settings._
 

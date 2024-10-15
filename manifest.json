@@ -41,9 +41,15 @@
     },
     "open-markdown-page": {
       "suggested_key": {
-        "default": "Alt+C"
+        "default": "Alt+M"
       },
       "description": "Open Markdown collection page"
+    },
+    "copy-as-markdown": {
+      "suggested_key": {
+        "default": "Alt+C"
+      },
+      "description": "Copy current page as Markdown"
     }
   },
   "content_scripts": [

@@ -26,6 +26,26 @@
       display: flex;
       justify-content: space-between;
     }
+    .button-container button {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      height:100px; /* Adjust as needed */
+    }
+    .button-icon {
+      font-size: 2em;
+      margin-bottom: 5px;
+    }
+    .button-text {
+      font-size: 0.9em;
+      margin-bottom: 2px;
+    }
+    .shortcut-hint {
+      font-size: 0.7em;
+      color: var(--text-color-light);
+    }
     button {
       flex: 1;
       padding: 8px;
@@ -126,8 +146,16 @@
 </head>
 <body>
   <div class="button-container">
-    <button id="open-markdown">&#8599; Open Collection</button>
-    <button id="copy-markdown">&#128203; Copy as Markdown</button>
+    <button id="open-markdown">
+      <span class="button-icon">&#8599;</span>
+      <span class="button-text">Open Collection</span>
+      <span class="shortcut-hint">Alt + M</span>
+    </button>
+    <button id="copy-markdown">
+      <span class="button-icon">&#128203;</span>
+      <span class="button-text">Copy as Markdown</span>
+      <span class="shortcut-hint">Alt + C</span>
+    </button>
   </div>
   
   <button class="accordion">How to use</button>
@@ -135,11 +163,11 @@
     <div class="info-container">
       <p>
         <div>
-          Press <strong style="color: var(--text-color-highlight);">Copy as Markdown</strong> to save the current page and copy its Markdown to clipboard quickly.<br>
+          Press <strong style="color: var(--text-color-highlight);">Copy as Markdown</strong> or use <strong style="color: var(--text-color-highlight);">Alt+C</strong> to save the current page and copy its Markdown to clipboard quickly.<br>
           <hr style="border: 0; height: 1px; background-color: rgba(128, 128, 128, 0.3); margin: 5px 0;">
           Use <strong style="color: var(--text-color-highlight);">Alt+I</strong> to quickly save (insert) a page without copying.<br>
           <hr style="border: 0; height: 1px; background-color: rgba(128, 128, 128, 0.3); margin: 5px 0;">
-          Open the Markdown collection page to view and manage your saved URLs (<strong style="color: var(--text-color-highlight);">Alt+C</strong>).
+          Open the Markdown collection page to view and manage your saved URLs (<strong style="color: var(--text-color-highlight);">Alt+M</strong>).
         </div>
       </p>
     </div>
