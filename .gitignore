@@ -1,6 +1,7 @@
 .cursorrules
 context-collector.zip
-.env
+*.env
 .aider*
 .cursorignore
 node_modules/
+.vscode/
