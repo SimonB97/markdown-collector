@@ -14,6 +14,7 @@ zip -r "$ZIP_FILE" \
     icons \
     fonts \
     *.js \
+    *.ts \
     *.html \
     LICENSE \
     libs/*.js
