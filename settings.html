@@ -179,7 +179,7 @@
 
     button, input[type="text"], input[type="password"], select {
       padding: 8px;
-      margin: 5px 2px;
+      margin: 5px 3px;
       background-color: var(--button-background);
       color: var(--button-color);
       border: 1px solid var(--button-border);
@@ -248,7 +248,7 @@
       <label for="llm-toggle">
         Use LLM for content refinement
         <span class="info-icon">?
-          <span class="info-popup">When saving a URL, a pop-up window will appear where you can specify how the AI should refine the content. For example, you can ask the AI to</span>
+          <span class="info-popup">When saving a URL, a pop-up window will appear where you can specify how the AI should refine or clean the content before saving it. For example, you can ask the AI to remove or keep only certain elements, or to add a summary or title.</span>
         </span>
       </label>
       <label class="toggle-switch">
@@ -261,20 +261,21 @@
       <div class="setting" id="api-key-setting">
         <label for="api-key">OpenAI API Key</label>
         <div style="display: flex; align-items: center;">
-          <input type="password" id="api-key" placeholder="Enter your OpenAI API key">
-          <button id="save-api-key">Save</button>
+          <div style="flex-grow: 1; display: flex; align-items: center;">
+            <input type="password" id="api-key" placeholder="Enter your OpenAI API key" style="flex-grow: 1;">
+          </div>
         </div>
       </div>
 
       <div class="setting" id="model-setting">
         <label for="model-select">AI Model</label>
         <div style="display: flex; align-items: center;">
+          <input type="text" id="custom-model" placeholder="Enter custom model name">
           <select id="model-select">
             <option value="gpt-4o-mini">gpt-4o-mini</option>
             <option value="gpt-4o">gpt-4o</option>
             <option value="custom">Custom</option>
           </select>
-          <input type="text" id="custom-model" placeholder="Enter custom model name" style="display: none; margin-left: 10px;">
         </div>
       </div>
 
@@ -282,7 +283,6 @@
         <label for="base-url">API Base URL</label>
         <div style="display: flex; align-items: center;">
           <input type="text" id="base-url" placeholder="Enter API base URL">
-          <button id="save-base-url">Save</button>
         </div>
       </div>
     </div>

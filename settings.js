@@ -20,11 +20,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const cleanupToggle = document.getElementById('cleanup-toggle');
   const llmToggle = document.getElementById('llm-toggle');
   const apiKeyInput = document.getElementById('api-key');
-  const saveApiKeyButton = document.getElementById('save-api-key');
   const modelSelect = document.getElementById('model-select');
   const customModel = document.getElementById('custom-model');
   const baseUrlInput = document.getElementById('base-url');
-  const saveBaseUrlButton = document.getElementById('save-base-url');
   const subSettingsContainer = document.querySelector('.sub-settings-container');
 
   // Initialize settings
@@ -69,21 +67,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
   customModel.addEventListener('input', saveModel);
 
-  saveApiKeyButton.addEventListener('click', () => {
+  apiKeyInput.addEventListener('input', debounce(() => {
     const apiKey = apiKeyInput.value.trim();
-    chrome.storage.local.set({ apiKey }, () => {
-      console.log('API Key saved');
-      alert('API Key saved successfully!');
-    });
-  });
+    if (apiKey) {  // Only save if the API key is not empty
+      chrome.storage.local.set({ apiKey }, () => {
+        console.log('API Key saved');
+      });
+    } else {
+      // If the API key is empty, remove it from storage
+      chrome.storage.local.remove('apiKey', () => {
+        console.log('Empty API Key removed from storage');
+      });
+    }
+  }, 500));
 
-  saveBaseUrlButton.addEventListener('click', () => {
+  baseUrlInput.addEventListener('input', debounce(() => {
     const baseUrl = baseUrlInput.value.trim();
     chrome.storage.local.set({ baseUrl }, () => {
       console.log('Base URL saved');
-      alert('Base URL saved successfully!');
     });
-  });
+  }, 500));
 
   function updateModelInputVisibility() {
     if (modelSelect.value === 'custom') {
@@ -118,4 +121,16 @@ function updateToggleVisually(toggle) {
   } else {
     toggle.parentElement.classList.remove('checked');
   }
+}
+
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
 }
