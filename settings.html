@@ -225,10 +225,56 @@
         --button-border: #44444400;
       }
     }
+
+    .note {
+      background-color: #e6f3ff;
+      border-left: 4px solid #2196F3;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 4px;
+    }
+
+    .warning {
+      background-color: #fff3cd;
+      border: 1px solid #ffeeba;
+      color: #856404;
+      margin-left: 140px;
+      margin-right: 140px;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 4px;
+      font-size: 14px;
+      max-width: 80%;
+      justify-content: center;
+    }
+
+    .warning-container {
+      height: 30px;
+    }
+
+    /* Dark theme */
+    @media (prefers-color-scheme: dark) {
+      .note {
+        background-color: #1a2733;
+        border-left-color: #3a6d99;
+      }
+
+      .warning {
+        background-color: #332b00;
+        border-color: #665500;
+        color: #ffd966;
+      }
+    }
   </style>
 </head>
 <body>
   <h1><span style="color: #e6b31c;">Markdown Collector</span> Settings</h1>
+
+  <div class="warning-container">
+    <div id="llm-warning" class="warning" style="display: none;">
+      It's recommended to enable "Keep main content only" when using LLM refinement. For details, see (?).
+    </div>
+  </div>
 
   <div class="all-settings-container">
     <div class="setting">
@@ -248,7 +294,12 @@
       <label for="llm-toggle">
         Use LLM for content refinement
         <span class="info-icon">?
-          <span class="info-popup">When saving a URL, a pop-up window will appear where you can specify how the AI should refine or clean the content before saving it. For example, you can ask the AI to remove or keep only certain elements, or to add a summary or title.</span>
+          <span class="info-popup">
+            When saving a URL, a pop-up window will appear where you can specify how the AI should refine or clean the content before saving it. For example, you can ask the AI to remove or keep only certain elements, or to add a summary or title.
+            <div class="note">
+              <strong>Note:</strong> It's recommended to enable "Keep main content only" to make content cleaner before feeding it to the AI. This helps because LLMs have limited context lengths (the default model, gpt-4o-mini, has a 128,000 token context window, which should fit most cleaned web page contents).
+            </div>
+          </span>
         </span>
       </label>
       <label class="toggle-switch">

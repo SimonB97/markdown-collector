@@ -19,6 +19,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   const cleanupToggle = document.getElementById('cleanup-toggle');
   const llmToggle = document.getElementById('llm-toggle');
+  const llmWarning = document.getElementById('llm-warning');
   const apiKeyInput = document.getElementById('api-key');
   const modelSelect = document.getElementById('model-select');
   const customModel = document.getElementById('custom-model');
@@ -41,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateToggleVisually(llmToggle);
     subSettingsContainer.style.display = result.enableLLM ? 'block' : 'none';
     updateModelInputVisibility();
+    updateLLMWarning();
   });
 
   cleanupToggle.addEventListener('change', () => {
@@ -48,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     chrome.storage.local.set({ enableCleanup: isEnabled }, () => {
       console.log(`Content Cleanup ${isEnabled ? 'enabled' : 'disabled'}`);
       updateToggleVisually(cleanupToggle);
+      updateLLMWarning();
     });
   });
 
@@ -57,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log(`LLM Refinement ${isEnabled ? 'enabled' : 'disabled'}`);
       updateToggleVisually(llmToggle);
       subSettingsContainer.style.display = isEnabled ? 'block' : 'none';
+      updateLLMWarning();
     });
   });
 
@@ -111,6 +115,14 @@ document.addEventListener('DOMContentLoaded', () => {
     chrome.storage.local.set({ model }, () => {
       console.log('Model saved:', model);
     });
+  }
+
+  function updateLLMWarning() {
+    if (llmToggle.checked && !cleanupToggle.checked) {
+      llmWarning.style.display = 'block';
+    } else {
+      llmWarning.style.display = 'none';
+    }
   }
 });
 
