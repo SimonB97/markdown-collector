@@ -180,3 +180,31 @@ export function setupTipBox(tipBox, understandButton) {
       tipBox.style.display = 'none';
     }
 }
+
+export function createSearchBox() {
+  const searchBox = document.createElement('input');
+  searchBox.type = 'text';
+  searchBox.id = 'search-box';
+  searchBox.placeholder = 'Search...';
+  searchBox.style.width = '100%';
+  searchBox.style.padding = '10px';
+  searchBox.style.marginBottom = '20px';
+  searchBox.style.fontSize = '16px';
+  searchBox.style.border = '1px solid #ccc';
+  searchBox.style.borderRadius = '4px';
+  return searchBox;
+}
+
+export function displaySearchResults(container, results) {
+  container.innerHTML = '';
+  if (results.length === 0) {
+    container.textContent = 'No results found.';
+    return;
+  }
+  results.forEach(result => {
+    const resultElement = document.createElement('div');
+    resultElement.className = 'search-result';
+    resultElement.textContent = result.title;
+    container.appendChild(resultElement);
+  });
+}
