@@ -1,7 +1,7 @@
 import { createActionButton, showDiffModal } from './uiComponents.js';
 import { groupByDate, getCoreDomain, getTodayDate, generateMockData } from './markdownUtils.js';
 
-export function loadMarkdownData(container, openUrls) {
+export function loadMarkdownData(container, openUrls, query = '') {
     browser.storage.local.get(['markdownData']).then((result) => {
       console.log("Loaded markdown data:", result.markdownData);
       let { markdownData } = result;
@@ -9,12 +9,12 @@ export function loadMarkdownData(container, openUrls) {
       if (!markdownData || markdownData.length === 0) {
         markdownData = generateMockData();
         browser.storage.local.set({ markdownData }).then(() => {
-          renderMarkdownData(markdownData, container, openUrls);
+          renderMarkdownData(markdownData, container, openUrls, query);
         }).catch((error) => {
           console.error("Error setting mock markdownData:", error);
         });
       } else {
-        renderMarkdownData(markdownData, container, openUrls);
+        renderMarkdownData(markdownData, container, openUrls, query);
       }
     }).catch((error) => {
       console.error("Error getting markdownData:", error);
@@ -78,13 +78,14 @@ export function copyEntry(url, markdown) {
     });
 }
 
-function renderMarkdownData(markdownData, container, openUrls) {
+function renderMarkdownData(markdownData, container, openUrls, query) {
     console.log("Rendering markdown data:", markdownData);
     // Clear the container before adding new elements
     container.innerHTML = '';
 
     if (markdownData && markdownData.length > 0) {
-      const groupedData = groupByDate(markdownData);
+      const filteredData = query ? searchMarkdownEntries(markdownData, query) : markdownData;
+      const groupedData = groupByDate(filteredData);
       
       // Sort date groups from newest to oldest using ISO date strings
       const dateGroups = Object.keys(groupedData).sort((a, b) => {
@@ -393,3 +394,11 @@ export function fetchAndConvertToMarkdown(url, enableCleanup, callback) {
       });
 }
 
+export function searchMarkdownEntries(markdownData, query) {
+    const lowerCaseQuery = query.toLowerCase();
+    return markdownData.filter(item => {
+      const titleMatch = item.title.toLowerCase().includes(lowerCaseQuery);
+      const markdownMatch = item.markdown.toLowerCase().includes(lowerCaseQuery);
+      return titleMatch || markdownMatch;
+    });
+}

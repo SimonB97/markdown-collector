@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const settingsButton = document.getElementById('open-settings');
   const tipBox = document.getElementById('tip-box');
   const understandButton = document.getElementById('understand-button');
+  const searchBox = document.getElementById('search-box');
 
   setupTipBox(tipBox, understandButton);
 
@@ -185,5 +186,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Add event listener for the settings button
   settingsButton.addEventListener('click', () => {
     browser.runtime.sendMessage({ command: 'open-settings' });
+  });
+
+  // Add event listener for the search box
+  searchBox.addEventListener('input', (event) => {
+    const query = event.target.value.trim().toLowerCase();
+    loadMarkdownData(container, openUrls, query);
   });
 });
