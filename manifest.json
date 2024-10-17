@@ -13,7 +13,7 @@
     "https://api.openai.com/"
   ],
   "background": {
-    "scripts": ["background.js"],
+    "scripts": ["scripts/components/background.js"],
     "type": "module"
   },
   "browser_specific_settings": {
@@ -58,8 +58,8 @@
       "js": [
         "libs/Readability.js",
         "libs/turndown.min.js",
-        "content.js",
-        "fetchContent.js"
+        "scripts/components/content.js",
+        "scripts/components/fetchContent.js"
       ],
       "run_at": "document_end"
     }
@@ -71,8 +71,8 @@
     "libs/turndown.min.js",
     "libs/Readability.js",
     "settings.html",
-    "settings.js",
-    "popup.js"
+    "scripts/components/settings.js",
+    "scripts/components/popup.js"
   ],
   "options_ui": {
     "page": "settings.html",
