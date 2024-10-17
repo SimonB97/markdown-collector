@@ -24,7 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const modelSelect = document.getElementById('model-select');
   const customModel = document.getElementById('custom-model');
   const baseUrlInput = document.getElementById('base-url');
+  const resetBaseUrlButton = document.getElementById('reset-base-url');
   const subSettingsContainer = document.querySelector('.sub-settings-container');
+
+  const DEFAULT_BASE_URL = 'https://api.openai.com/v1/chat/completions';
 
   // Initialize settings
   chrome.storage.local.get(['enableCleanup', 'enableLLM', 'apiKey', 'model', 'baseUrl'], (result) => {
@@ -37,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       modelSelect.value = result.model || 'gpt-4o-mini';
     }
-    baseUrlInput.value = result.baseUrl || 'https://api.openai.com/v1/chat/completions';
+    baseUrlInput.value = result.baseUrl || DEFAULT_BASE_URL;
     updateToggleVisually(cleanupToggle);
     updateToggleVisually(llmToggle);
     subSettingsContainer.style.display = result.enableLLM ? 'block' : 'none';
@@ -91,6 +94,13 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('Base URL saved');
     });
   }, 500));
+
+  resetBaseUrlButton.addEventListener('click', () => {
+    baseUrlInput.value = DEFAULT_BASE_URL;
+    chrome.storage.local.set({ baseUrl: DEFAULT_BASE_URL }, () => {
+      console.log('Base URL reset to default');
+    });
+  });
 
   function updateModelInputVisibility() {
     if (modelSelect.value === 'custom') {
