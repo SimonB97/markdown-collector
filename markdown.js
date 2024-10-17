@@ -191,6 +191,25 @@ document.addEventListener('DOMContentLoaded', () => {
   // Add event listener for the search box
   searchBox.addEventListener('input', (event) => {
     const query = event.target.value.trim().toLowerCase();
-    loadMarkdownData(container, openUrls, query);
+    const filters = {
+      searchUrl: document.getElementById('search-url').checked,
+      searchTitle: document.getElementById('search-title').checked,
+      searchContents: document.getElementById('search-contents').checked
+    };
+    loadMarkdownData(container, openUrls, query, filters);
+  });
+
+  // Add event listeners for the checkboxes
+  const checkboxes = document.querySelectorAll('.checkbox-container input[type="checkbox"]');
+  checkboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', () => {
+      const query = searchBox.value.trim().toLowerCase();
+      const filters = {
+        searchUrl: document.getElementById('search-url').checked,
+        searchTitle: document.getElementById('search-title').checked,
+        searchContents: document.getElementById('search-contents').checked
+      };
+      loadMarkdownData(container, openUrls, query, filters);
+    });
   });
 });
