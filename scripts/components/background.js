@@ -72,7 +72,7 @@ function saveCurrentTabUrl(sendResponse) {
               let finalMarkdown = response.markdown;
               if (enableLLM && response.prompt && apiKey) {
                 console.log("Refining markdown with LLM using prompt:", response.prompt);
-                finalMarkdown = await refineMDWithLLM(response.markdown, response.prompt, apiKey);
+                finalMarkdown = await refineMDWithLLM(response.markdown, response.prompt, apiKey, tab.id);
               } else if (response.prompt === undefined) {
                 console.log("Saving without LLM refinement");
               } else {
@@ -134,7 +134,7 @@ function saveCurrentTabUrl(sendResponse) {
   });
 }
 
-async function refineMDWithLLM(markdown, prompt, apiKey) {
+async function refineMDWithLLM(markdown, prompt, apiKey, tabId) {
   console.log('Refining markdown with LLM. Prompt:', prompt);
   console.log('API Key (first 4 characters):', apiKey.substring(0, 4));
 
@@ -208,7 +208,21 @@ async function refineMDWithLLM(markdown, prompt, apiKey) {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.status === 401) {
+        chrome.tabs.sendMessage(tabId, { 
+          command: 'show-notification', 
+          message: 'Authentication error. Please check your API key and model access.', 
+          type: 'error'
+        });
+      } else if (response.status === 500) {
+        chrome.tabs.sendMessage(tabId, { 
+          command: 'show-notification', 
+          message: 'Server connection error. Please check the base URL.', 
+          type: 'error'
+        });
+      } else {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
     }
 
     const data = await response.json();

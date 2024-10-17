@@ -258,7 +258,7 @@ function showNotification(message, type = 'info') {
     top: 20px;
     right: 20px;
     padding: 10px 20px;
-    background-color: ${type === 'error' ? '#ff4444' : '#27ae60'};
+    background-color: ${type === 'error' ? '#ff4444' : type === 'warning' ? '#ffaa00' : '#27ae60'};
     color: white;
     border-radius: 5px;
     z-index: 10000;
