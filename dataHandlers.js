@@ -149,7 +149,7 @@ function renderMarkdownData(markdownData, container, openUrls, query, filters) {
 
         const dateContent = document.createElement('div');
         dateContent.className = 'date-content';
-        dateContent.style.display = date === getTodayDate() ? 'block' : 'none'; // Only current date expanded by default
+        dateContent.style.display = date === getTodayDate() || query ? 'block' : 'none'; // Ensure date headers are expanded when search results are displayed
 
         dateHeader.addEventListener('click', () => {
           dateContent.style.display = dateContent.style.display === 'none' ? 'block' : 'none';
