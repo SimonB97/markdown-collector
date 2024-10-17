@@ -208,3 +208,56 @@ export function displaySearchResults(container, results) {
     container.appendChild(resultElement);
   });
 }
+
+export function createCheckbox(id, label, checked = true) {
+  const checkboxContainer = document.createElement('div');
+  checkboxContainer.className = 'checkbox-container';
+
+  const checkboxLabel = document.createElement('label');
+  checkboxLabel.textContent = label;
+
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.id = id;
+  checkbox.checked = checked;
+
+  checkboxLabel.prepend(checkbox);
+  checkboxContainer.appendChild(checkboxLabel);
+
+  return checkboxContainer;
+}
+
+export function createCheckboxes() {
+  const checkboxesContainer = document.createElement('div');
+  checkboxesContainer.className = 'checkboxes-container';
+
+  const urlCheckbox = createCheckbox('search-url', 'URL');
+  const titleCheckbox = createCheckbox('search-title', 'Title');
+  const contentsCheckbox = createCheckbox('search-contents', 'Contents');
+
+  checkboxesContainer.appendChild(urlCheckbox);
+  checkboxesContainer.appendChild(titleCheckbox);
+  checkboxesContainer.appendChild(contentsCheckbox);
+
+  return checkboxesContainer;
+}
+
+export function filterSearchResults(results, query, filters) {
+  return results.filter(result => {
+    const urlMatch = filters.searchUrl && result.url.toLowerCase().includes(query);
+    const titleMatch = filters.searchTitle && result.title.toLowerCase().includes(query);
+    const contentsMatch = filters.searchContents && result.contents.toLowerCase().includes(query);
+    return urlMatch || titleMatch || contentsMatch;
+  });
+}
+
+export function sortSearchResults(results, sortBy) {
+  return results.sort((a, b) => {
+    if (sortBy === 'date') {
+      return new Date(b.date) - new Date(a.date);
+    } else if (sortBy === 'title') {
+      return a.title.localeCompare(b.title);
+    }
+    return 0;
+  });
+}
