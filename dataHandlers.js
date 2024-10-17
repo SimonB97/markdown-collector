@@ -1,7 +1,7 @@
 import { createActionButton, showDiffModal } from './uiComponents.js';
 import { groupByDate, getCoreDomain, getTodayDate, generateMockData } from './markdownUtils.js';
 
-export function loadMarkdownData(container, openUrls, query = '') {
+export function loadMarkdownData(container, openUrls, query = '', filters = { searchUrl: true, searchTitle: true, searchContents: true }) {
     browser.storage.local.get(['markdownData']).then((result) => {
       console.log("Loaded markdown data:", result.markdownData);
       let { markdownData } = result;
@@ -9,12 +9,12 @@ export function loadMarkdownData(container, openUrls, query = '') {
       if (!markdownData || markdownData.length === 0) {
         markdownData = generateMockData();
         browser.storage.local.set({ markdownData }).then(() => {
-          renderMarkdownData(markdownData, container, openUrls, query);
+          renderMarkdownData(markdownData, container, openUrls, query, filters);
         }).catch((error) => {
           console.error("Error setting mock markdownData:", error);
         });
       } else {
-        renderMarkdownData(markdownData, container, openUrls, query);
+        renderMarkdownData(markdownData, container, openUrls, query, filters);
       }
     }).catch((error) => {
       console.error("Error getting markdownData:", error);
@@ -78,13 +78,13 @@ export function copyEntry(url, markdown) {
     });
 }
 
-function renderMarkdownData(markdownData, container, openUrls, query) {
+function renderMarkdownData(markdownData, container, openUrls, query, filters) {
     console.log("Rendering markdown data:", markdownData);
     // Clear the container before adding new elements
     container.innerHTML = '';
 
     if (markdownData && markdownData.length > 0) {
-      const filteredData = query ? searchMarkdownEntries(markdownData, query) : markdownData;
+      const filteredData = query ? searchMarkdownEntries(markdownData, query, filters) : markdownData;
       const groupedData = groupByDate(filteredData);
       
       // Sort date groups from newest to oldest using ISO date strings
@@ -108,7 +108,7 @@ function renderMarkdownData(markdownData, container, openUrls, query) {
         const selectAllLabel = document.createElement('label');
         selectAllLabel.textContent = ' All';
         selectAllLabel.style.cursor = 'pointer';
-        selectAllLabel.style.color = 'gray';
+        selectAllLabel.style.color = 'var(--select-all-text-color)';
         selectAllBox.appendChild(selectAllLabel);
 
         container.appendChild(selectAllBox);
@@ -132,7 +132,7 @@ function renderMarkdownData(markdownData, container, openUrls, query) {
         const dateHeader = document.createElement('div');
         dateHeader.className = 'date-header';
         dateHeader.textContent = date; // Display date in ISO format
-        dateHeader.style.color = 'var(--date-header-text-color)';
+        dateHeader.style.color = 'var(--time-date-color)';
         dateHeader.style.paddingLeft = '11px';
         dateHeader.style.cursor = 'pointer';
 
@@ -195,7 +195,15 @@ function renderMarkdownData(markdownData, container, openUrls, query) {
           path.textContent = ` ${new URL(item.url).pathname}`;
           titleText.appendChild(path);
 
+          const pageTitle = document.createElement('div');
+          pageTitle.className = 'title-text';
+          pageTitle.textContent = item.title;
+          pageTitle.style.fontSize = '12px';
+          pageTitle.style.color = 'gray';
+          pageTitle.style.marginTop = '5px';
+
           titleContent.appendChild(titleText);
+          titleContent.appendChild(pageTitle);
 
           const rightSection = document.createElement('div');
           rightSection.style.display = 'flex';
@@ -223,7 +231,7 @@ function renderMarkdownData(markdownData, container, openUrls, query) {
           const dateTimeText = document.createElement('span');
           const savedDateTime = new Date(item.savedAt);
           dateTimeText.textContent = `${savedDateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-          dateTimeText.style.color = 'gray';
+          dateTimeText.style.color = 'var(--time-date-color)';
           dateTimeText.style.fontSize = '16px';
           dateTimeText.style.fontFamily = 'monospace';
 
@@ -394,11 +402,12 @@ export function fetchAndConvertToMarkdown(url, enableCleanup, callback) {
       });
 }
 
-export function searchMarkdownEntries(markdownData, query) {
+export function searchMarkdownEntries(markdownData, query, filters) {
     const lowerCaseQuery = query.toLowerCase();
     return markdownData.filter(item => {
-      const titleMatch = item.title.toLowerCase().includes(lowerCaseQuery);
-      const markdownMatch = item.markdown.toLowerCase().includes(lowerCaseQuery);
-      return titleMatch || markdownMatch;
+      const urlMatch = filters.searchUrl && item.url.toLowerCase().includes(lowerCaseQuery);
+      const titleMatch = filters.searchTitle && item.title.toLowerCase().includes(lowerCaseQuery);
+      const markdownMatch = filters.searchContents && item.markdown.toLowerCase().includes(lowerCaseQuery);
+      return urlMatch || titleMatch || markdownMatch;
     });
 }

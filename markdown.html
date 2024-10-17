@@ -150,7 +150,6 @@
         --button-color: #ffffff;
         --button-border: #ccc;
         --box-title-hover-background: #e6e6e6;
-        --focus-color: #4a90e2;
         --focus-shadow-color: rgba(74, 144, 226, 0.2);
         --entry-title-color: #b5661d;
         --diff-modal-background: #ffffff;
@@ -180,7 +179,6 @@
         --button-color: #ffffff;
         --button-border: #000000;
         --box-title-hover-background: #161616;
-        --focus-color: #64b5f6;
         --focus-shadow-color: rgba(100, 181, 246, 0.2);
         --entry-title-color: #ea9d55;
         --diff-modal-background: #2a2a2a;
@@ -346,9 +344,9 @@
         --button-hover-background: #e0e0e0;
         --button-color: #343434;
         --button-border: #ccc;
-        --focus-color: #4a90e2;
+        --focus-color: #e6b41c5c;
         --focus-shadow-color: rgba(74, 144, 226, 0.2);
-        --entry-title-color: #b5661d;
+        --entry-title-color: #3c3c3c;
         --diff-modal-background: #ffffff;
         --diff-modal-text: #000000;
         --diff-modal-border: #ccc;
@@ -365,7 +363,9 @@
         --copy-button-background: #4a4a4a6c;
         --update-button-background: #32758fbb;
         --delete-button-background: #b43838ab;
-        --date-header-text-color: #6c6c6c;
+        --date-header-text-color: gray;
+        --time-date-color: #648bc4;
+        --select-all-text-color: gray;
       }
     }
 
@@ -382,9 +382,9 @@
         --button-hover-background: #444;
         --button-color: #ffffff;
         --button-border: #000000;
-        --focus-color: #64b5f6;
+        --focus-color: #ea9d5551;
         --focus-shadow-color: rgba(100, 181, 246, 0.2);
-        --entry-title-color: #ea9d55;
+        --entry-title-color: #e6e6e6;
         --diff-modal-background: #2a2a2a;
         --diff-modal-text: #ffffff;
         --diff-modal-border: #444;
@@ -401,15 +401,73 @@
         --copy-button-background: #4a4a4a;
         --update-button-background: #1a5f7a;
         --delete-button-background: #9b2727f5;
-        --date-header-text-color: #6c6c6c;
+        --date-header-text-color: gray;
+        --time-date-color: #748fb7;
+        --select-all-text-color: gray;
       }
+    }
+
+    /* P37a6 */
+    #search-box {
+      width: 283px;
+      padding: 8px;
+      margin-bottom: 8px;
+      font-size: 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      color: var(--text-color);
+      background-color: var(--textarea-background);
+      outline: 1px solid transparent;
+      outline-offset: 2px;
+    }
+
+    /* P25c1 */
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .checkbox-container label {
+      margin-right: 10px;
+      font-size: 14px;
+      color: var(--text-color);
+    }
+
+    .checkbox-container input[type="checkbox"] {
+      margin-right: 5px;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      outline: none;
+      margin-bottom: -2pt;
+      cursor: pointer;
+      transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .checkbox-container input[type="checkbox"]:checked {
+      background-color: var(--focus-color);
+      border-color: var(--focus-color);
+    }
+
+    .checkbox-container input[type="checkbox"]:hover {
+      border-color: var(--focus-color);
     }
   </style>
 </head>
 <body>
   <h1><span style="color: #e6b31c;">Markdown Collector</span></h1>
-
+  
   <input type="text" id="search-box" placeholder="Search...">
+
+  <div class="checkbox-container">
+    <label><input type="checkbox" id="search-url" checked> URL</label>
+    <label><input type="checkbox" id="search-title" checked> Title</label>
+    <label><input type="checkbox" id="search-contents" checked> Contents</label>
+  </div>
 
   <button class="action-button copy-button" id="copy-markdown-page">⎘ Copy</button>
   <button class="action-button update-button" id="update-markdown-page">↻ Update</button>
