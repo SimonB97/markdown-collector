@@ -13,10 +13,9 @@ zip -r "$ZIP_FILE" \
     manifest.json \
     icons \
     fonts \
-    *.js \
-    *.ts \
     *.html \
     LICENSE \
-    libs/*.js
+    scripts \
+    libs \
 
 echo "Files have been zipped into $ZIP_FILE"
