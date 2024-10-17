@@ -137,6 +137,13 @@
       position: relative;
     }
 
+    #model-info {
+      width: 100px;
+      border-radius: 10px;
+      padding-left: 0;
+      padding-right: 0;
+    }
+
     .info-popup {
       display: none;
       position: absolute;
@@ -310,7 +317,13 @@
 
     <div class="sub-settings-container" style="display: none;">
       <div class="setting" id="api-key-setting">
-        <label for="api-key">OpenAI API Key</label>
+        <label for="api-key">OpenAI API Key
+          <span class="info-icon">?
+            <span class="info-popup">
+              You can find your OpenAI API key <a href="https://platform.openai.com/api-keys" target="_blank" style="color: rgb(79, 138, 255); text-decoration: none;">here</a> or follow the instructions <a href="https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key" target="_blank" style="color: rgb(79, 138, 255); text-decoration: none;">here</a>.
+            </span>
+          </span>
+        </label>
         <div style="display: flex; align-items: center;">
           <div style="flex-grow: 1; display: flex; align-items: center;">
             <input type="password" id="api-key" placeholder="Enter your OpenAI API key" style="flex-grow: 1;">
@@ -319,7 +332,13 @@
       </div>
 
       <div class="setting" id="model-setting">
-        <label for="model-select">AI Model</label>
+        <label for="model-select">AI Model
+          <span class="info-icon" id="model-info">Local Models
+            <span class="info-popup">
+              Local Large Language Models can be used too, e.g., with <a href="https://lmstudio.ai/" target="_blank" style="color: rgb(79, 138, 255); text-decoration: none;">LM Studio</a> or <a href="https://ollama.com/" target="_blank" style="color: rgb(79, 138, 255); text-decoration: none;">Ollama</a>. Server endpoints need to support the OpenAI function calling feature. Simply pass the server URL and model name.
+            </span>
+          </span>
+        </label>
         <div style="display: flex; align-items: center;">
           <input type="text" id="custom-model" placeholder="Enter custom model name">
           <select id="model-select">
@@ -334,6 +353,7 @@
         <label for="base-url">API Base URL</label>
         <div style="display: flex; align-items: center;">
           <input type="text" id="base-url" placeholder="Enter API base URL">
+          <button id="reset-base-url">Reset</button>
         </div>
       </div>
     </div>
