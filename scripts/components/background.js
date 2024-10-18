@@ -73,6 +73,13 @@ function saveCurrentTabUrl(sendResponse) {
               if (enableLLM && response.prompt && apiKey) {
                 console.log("Refining markdown with LLM using prompt:", response.prompt);
                 finalMarkdown = await refineMDWithLLM(response.markdown, response.prompt, apiKey);
+                if (!finalMarkdown) {
+                  console.log("Error occurred during LLM refinement. Aborting save process.");
+                  if (sendResponse) {
+                    sendResponse({ status: "Error: LLM refinement failed" });
+                  }
+                  return; // Exit the function early if LLM refinement fails
+                }
               } else if (response.prompt === undefined) {
                 console.log("Saving without LLM refinement");
               } else {
@@ -208,6 +215,27 @@ async function refineMDWithLLM(markdown, prompt, apiKey) {
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, { 
+              command: 'show-notification', 
+              message: 'Authentication error. Please check the API key in the settings.', 
+              type: 'error'
+            });
+          }
+        });
+      } else {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, { 
+              command: 'show-notification', 
+              message: 'Error refining content. Please check the base URL in the settings.', 
+              type: 'error'
+            });
+          }
+        });
+      }
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
@@ -224,7 +252,7 @@ async function refineMDWithLLM(markdown, prompt, apiKey) {
     }
   } catch (error) {
     console.error('Error refining content with OpenAI:', error);
-    return markdown; // Return original markdown if refinement fails
+    return null; // Return null if refinement fails
   }
 }
 
