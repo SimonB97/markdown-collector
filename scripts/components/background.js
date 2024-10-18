@@ -70,13 +70,13 @@ function saveCurrentTabUrl(sendResponse) {
               return; // Exit the function early if cancelled
             } else {
               let finalMarkdown = response.markdown;
-              if (enableLLM && response.prompt && apiKey) {
+              if (enableLLM && response.prompt) {
                 console.log("Refining markdown with LLM using prompt:", response.prompt);
                 finalMarkdown = await refineMDWithLLM(response.markdown, response.prompt, apiKey);
               } else if (response.prompt === undefined) {
                 console.log("Saving without LLM refinement");
               } else {
-                console.log("Skipping LLM refinement:", { enableLLM, hasPrompt: !!response.prompt, hasApiKey: !!apiKey });
+                console.log("Skipping LLM refinement:", { enableLLM, hasPrompt: !!response.prompt });
               }
               
               let updatedMarkdownData = [...markdownData];
@@ -136,7 +136,7 @@ function saveCurrentTabUrl(sendResponse) {
 
 async function refineMDWithLLM(markdown, prompt, apiKey) {
   console.log('Refining markdown with LLM. Prompt:', prompt);
-  console.log('API Key (first 4 characters):', apiKey.substring(0, 4));
+  console.log('API Key (first 4 characters):', apiKey ? apiKey.substring(0, 4) : 'N/A');
 
   const messages = [
     { role: 'system', content: 'You are an AI assistant that refines and structures webpage content based on user prompts. Your task is to modify the given markdown content according to the user\'s instructions.' },
@@ -197,7 +197,7 @@ async function refineMDWithLLM(markdown, prompt, apiKey) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        'Authorization': apiKey ? `Bearer ${apiKey}` : undefined
       },
       body: JSON.stringify({
         model: model || 'gpt-4o-mini',
