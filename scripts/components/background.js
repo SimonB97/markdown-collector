@@ -241,7 +241,7 @@ async function refineMDWithLLM(markdown, prompt, apiKey, tabId) {
     }
   } catch (error) {
     console.error('Error refining content with OpenAI:', error);
-    return markdown; // Return original markdown if refinement fails
+    return null; // Return null if refinement fails
   }
 }
 
