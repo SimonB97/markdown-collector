@@ -190,6 +190,9 @@ async function refineMDWithLLM(markdown, prompt, apiKey, tabId) {
   try {
     console.log('Sending request to OpenAI');
     
+    // Show loading indicator
+    chrome.tabs.sendMessage(tabId, { command: 'show-loading' });
+
     // Fetch the model and baseUrl from storage
     const { model, baseUrl } = await new Promise((resolve) => {
       chrome.storage.local.get(['model', 'baseUrl'], resolve);
@@ -208,6 +211,9 @@ async function refineMDWithLLM(markdown, prompt, apiKey, tabId) {
         function_call: { name: 'structure_content' }
       })
     });
+
+    // Hide loading indicator
+    chrome.tabs.sendMessage(tabId, { command: 'hide-loading' });
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -241,6 +247,8 @@ async function refineMDWithLLM(markdown, prompt, apiKey, tabId) {
     }
   } catch (error) {
     console.error('Error refining content with OpenAI:', error);
+    // Hide loading indicator in case of error
+    chrome.tabs.sendMessage(tabId, { command: 'hide-loading' });
     return null; // Return null if refinement fails
   }
 }
