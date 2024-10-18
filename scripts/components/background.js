@@ -72,11 +72,11 @@ function saveCurrentTabUrl(sendResponse) {
               let finalMarkdown = response.markdown;
               if (enableLLM && response.prompt) {
                 console.log("Refining markdown with LLM using prompt:", response.prompt);
-                finalMarkdown = await refineMDWithLLM(response.markdown, response.prompt, apiKey);
+                finalMarkdown = await refineMDWithLLM(response.markdown, response.prompt, apiKey, tab.id);
               } else if (response.prompt === undefined) {
                 console.log("Saving without LLM refinement");
               } else {
-                console.log("Skipping LLM refinement:", { enableLLM, hasPrompt: !!response.prompt });
+                console.log("Skipping LLM refinement:", { enableLLM, hasPrompt: !!response.prompt, hasApiKey: !!apiKey });
               }
               
               let updatedMarkdownData = [...markdownData];
@@ -134,7 +134,7 @@ function saveCurrentTabUrl(sendResponse) {
   });
 }
 
-async function refineMDWithLLM(markdown, prompt, apiKey) {
+async function refineMDWithLLM(markdown, prompt, apiKey, tabId) {
   console.log('Refining markdown with LLM. Prompt:', prompt);
   console.log('API Key (first 4 characters):', apiKey ? apiKey.substring(0, 4) : 'N/A');
 
@@ -197,7 +197,7 @@ async function refineMDWithLLM(markdown, prompt, apiKey) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': apiKey ? `Bearer ${apiKey}` : undefined
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
         model: model || 'gpt-4o-mini',
@@ -209,24 +209,16 @@ async function refineMDWithLLM(markdown, prompt, apiKey) {
 
     if (!response.ok) {
       if (response.status === 401) {
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          if (tabs[0]) {
-            chrome.tabs.sendMessage(tabs[0].id, {
-              command: 'show-notification',
-              message: 'Authentication error! Please check your API key.',
-              type: 'error'
-            });
-          }
+        chrome.tabs.sendMessage(tabId, { 
+          command: 'show-notification', 
+          message: 'Authentication error! Please check your API key.', 
+          type: 'error'
         });
       } else {
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          if (tabs[0]) {
-            chrome.tabs.sendMessage(tabs[0].id, {
-              command: 'show-notification',
-              message: 'Connection error! Please check the base URL in the settings.',
-              type: 'error'
-            });
-          }
+        chrome.tabs.sendMessage(tabId, { 
+          command: 'show-notification', 
+          message: 'Connection error! Please check the base URL in settings.', 
+          type: 'error'
         });
       }
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -481,7 +473,7 @@ function copyAsMarkdown() {
               
               if (enableLLM && apiKey) {
                 console.log("Refining markdown with LLM using prompt:", response.prompt);
-                finalMarkdown = await refineMDWithLLM(response.markdown, response.prompt, apiKey);
+                finalMarkdown = await refineMDWithLLM(response.markdown, response.prompt, apiKey, tab.id);
               } else {
                 console.log("Skipping LLM refinement:", { enableLLM, hasApiKey: !!apiKey });
               }
