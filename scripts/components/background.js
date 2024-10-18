@@ -79,37 +79,39 @@ function saveCurrentTabUrl(sendResponse) {
                 console.log("Skipping LLM refinement:", { enableLLM, hasPrompt: !!response.prompt, hasApiKey: !!apiKey });
               }
               
-              let updatedMarkdownData = [...markdownData];
-              if (isNewEntry) {
-                updatedMarkdownData.push({
-                  url: tab.url,
-                  title: tab.title,
-                  markdown: finalMarkdown,
-                  savedAt: new Date().toISOString()
-                });
-              } else {
-                updatedMarkdownData[existingIndex] = {
-                  ...updatedMarkdownData[existingIndex],
-                  markdown: finalMarkdown,
-                  savedAt: new Date().toISOString()
-                };
-              }
-              
-              chrome.storage.local.set({ markdownData: updatedMarkdownData }, () => {
-                if (chrome.runtime.lastError) {
-                  console.error("Error setting markdownData:", chrome.runtime.lastError);
-                } else {
-                  console.log("Markdown data updated successfully");
-                  // Show notification
-                  chrome.tabs.sendMessage(tab.id, { 
-                    command: 'show-notification', 
-                    message: isNewEntry ? 'URL saved successfully' : 'URL updated successfully'
+              if (finalMarkdown !== false) {
+                let updatedMarkdownData = [...markdownData];
+                if (isNewEntry) {
+                  updatedMarkdownData.push({
+                    url: tab.url,
+                    title: tab.title,
+                    markdown: finalMarkdown,
+                    savedAt: new Date().toISOString()
                   });
+                } else {
+                  updatedMarkdownData[existingIndex] = {
+                    ...updatedMarkdownData[existingIndex],
+                    markdown: finalMarkdown,
+                    savedAt: new Date().toISOString()
+                  };
                 }
-                if (sendResponse) {
-                  sendResponse({ status: "URL save process completed" });
-                }
-              });
+                
+                chrome.storage.local.set({ markdownData: updatedMarkdownData }, () => {
+                  if (chrome.runtime.lastError) {
+                    console.error("Error setting markdownData:", chrome.runtime.lastError);
+                  } else {
+                    console.log("Markdown data updated successfully");
+                    // Show notification
+                    chrome.tabs.sendMessage(tab.id, { 
+                      command: 'show-notification', 
+                      message: isNewEntry ? 'URL saved successfully' : 'URL updated successfully'
+                    });
+                  }
+                  if (sendResponse) {
+                    sendResponse({ status: "URL save process completed" });
+                  }
+                });
+              }
             }
           } else {
             console.error("No markdown received from content script");
@@ -214,12 +216,14 @@ async function refineMDWithLLM(markdown, prompt, apiKey, tabId) {
           message: 'Authentication error! Please check your API key.', 
           type: 'error'
         });
+        return false;
       } else {
         chrome.tabs.sendMessage(tabId, { 
           command: 'show-notification', 
           message: 'Connection error! Please check the base URL in settings.', 
           type: 'error'
         });
+        return false;
       }
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -429,6 +433,16 @@ function removeMarkdownData(tab) {
   });
 }
 
+/**
+ * Reverts the loading state of markdown data for a given tab.
+ *
+ * This function retrieves the markdown data from Chrome's local storage,
+ * updates the loading state of the markdown data for the specified tab,
+ * and then saves the updated markdown data back to local storage.
+ *
+ * @param {Object} tab - The tab object containing the URL of the tab.
+ * @param {string} tab.url - The URL of the tab to revert the markdown data for.
+ */
 function revertMarkdownData(tab) {
   chrome.storage.local.get(['markdownData'], (result) => {
     const markdownData = result.markdownData || [];
@@ -447,6 +461,25 @@ function revertMarkdownData(tab) {
     });
   });
 }
+/**
+ * Copies the current active tab's content as Markdown.
+ * 
+ * This function queries the active tab in the current window and sends a message
+ * to the content script to convert the content to Markdown. If the conversion is
+ * successful, it optionally refines the Markdown using a language model (LLM) if
+ * enabled and an API key is provided. Finally, it proceeds with copying and saving
+ * the Markdown content.
+ * 
+ * @function
+ * @name copyAsMarkdown
+ * 
+ * @example
+ * // Call the function to copy the active tab's content as Markdown
+ * copyAsMarkdown();
+ * 
+ * @throws Will log an error if no active tab is found or if there is an error sending
+ * the message to the content script.
+ */
 function copyAsMarkdown() {
   chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
     if (tabs[0]) {
@@ -478,7 +511,9 @@ function copyAsMarkdown() {
                 console.log("Skipping LLM refinement:", { enableLLM, hasApiKey: !!apiKey });
               }
               
-              proceedWithCopyAndSave(tab, finalMarkdown);
+              if (finalMarkdown !== false) {
+                proceedWithCopyAndSave(tab, finalMarkdown);
+              }
             });
           } else {
             proceedWithCopyAndSave(tab, finalMarkdown);
