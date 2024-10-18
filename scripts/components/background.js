@@ -208,6 +208,27 @@ async function refineMDWithLLM(markdown, prompt, apiKey) {
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+              command: 'show-notification',
+              message: 'Authentication error! Please check your API key.',
+              type: 'error'
+            });
+          }
+        });
+      } else {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+              command: 'show-notification',
+              message: 'Connection error! Please check the base URL in the settings.',
+              type: 'error'
+            });
+          }
+        });
+      }
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
