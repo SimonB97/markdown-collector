@@ -70,53 +70,48 @@ function saveCurrentTabUrl(sendResponse) {
               return; // Exit the function early if cancelled
             } else {
               let finalMarkdown = response.markdown;
-              if (enableLLM && response.prompt && apiKey) {
+              if (enableLLM && response.prompt) {
                 console.log("Refining markdown with LLM using prompt:", response.prompt);
-                finalMarkdown = await refineMDWithLLM(response.markdown, response.prompt, apiKey);
-                if (!finalMarkdown) {
-                  console.log("Error occurred during LLM refinement. Aborting save process.");
-                  if (sendResponse) {
-                    sendResponse({ status: "Error: LLM refinement failed" });
-                  }
-                  return; // Exit the function early if LLM refinement fails
-                }
+                finalMarkdown = await refineMDWithLLM(response.markdown, response.prompt, apiKey, tab.id);
               } else if (response.prompt === undefined) {
                 console.log("Saving without LLM refinement");
               } else {
                 console.log("Skipping LLM refinement:", { enableLLM, hasPrompt: !!response.prompt, hasApiKey: !!apiKey });
               }
               
-              let updatedMarkdownData = [...markdownData];
-              if (isNewEntry) {
-                updatedMarkdownData.push({
-                  url: tab.url,
-                  title: tab.title,
-                  markdown: finalMarkdown,
-                  savedAt: new Date().toISOString()
-                });
-              } else {
-                updatedMarkdownData[existingIndex] = {
-                  ...updatedMarkdownData[existingIndex],
-                  markdown: finalMarkdown,
-                  savedAt: new Date().toISOString()
-                };
-              }
-              
-              chrome.storage.local.set({ markdownData: updatedMarkdownData }, () => {
-                if (chrome.runtime.lastError) {
-                  console.error("Error setting markdownData:", chrome.runtime.lastError);
-                } else {
-                  console.log("Markdown data updated successfully");
-                  // Show notification
-                  chrome.tabs.sendMessage(tab.id, { 
-                    command: 'show-notification', 
-                    message: isNewEntry ? 'URL saved successfully' : 'URL updated successfully'
+              if (finalMarkdown !== false) {
+                let updatedMarkdownData = [...markdownData];
+                if (isNewEntry) {
+                  updatedMarkdownData.push({
+                    url: tab.url,
+                    title: tab.title,
+                    markdown: finalMarkdown,
+                    savedAt: new Date().toISOString()
                   });
+                } else {
+                  updatedMarkdownData[existingIndex] = {
+                    ...updatedMarkdownData[existingIndex],
+                    markdown: finalMarkdown,
+                    savedAt: new Date().toISOString()
+                  };
                 }
-                if (sendResponse) {
-                  sendResponse({ status: "URL save process completed" });
-                }
-              });
+                
+                chrome.storage.local.set({ markdownData: updatedMarkdownData }, () => {
+                  if (chrome.runtime.lastError) {
+                    console.error("Error setting markdownData:", chrome.runtime.lastError);
+                  } else {
+                    console.log("Markdown data updated successfully");
+                    // Show notification
+                    chrome.tabs.sendMessage(tab.id, { 
+                      command: 'show-notification', 
+                      message: isNewEntry ? 'URL saved successfully' : 'URL updated successfully'
+                    });
+                  }
+                  if (sendResponse) {
+                    sendResponse({ status: "URL save process completed" });
+                  }
+                });
+              }
             }
           } else {
             console.error("No markdown received from content script");
@@ -141,9 +136,9 @@ function saveCurrentTabUrl(sendResponse) {
   });
 }
 
-async function refineMDWithLLM(markdown, prompt, apiKey) {
+async function refineMDWithLLM(markdown, prompt, apiKey, tabId) {
   console.log('Refining markdown with LLM. Prompt:', prompt);
-  console.log('API Key (first 4 characters):', apiKey.substring(0, 4));
+  console.log('API Key (first 4 characters):', apiKey ? apiKey.substring(0, 4) : 'N/A');
 
   const messages = [
     { role: 'system', content: 'You are an AI assistant that refines and structures webpage content based on user prompts. Your task is to modify the given markdown content according to the user\'s instructions.' },
@@ -216,25 +211,19 @@ async function refineMDWithLLM(markdown, prompt, apiKey) {
 
     if (!response.ok) {
       if (response.status === 401) {
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          if (tabs[0]) {
-            chrome.tabs.sendMessage(tabs[0].id, { 
-              command: 'show-notification', 
-              message: 'Authentication error. Please check the API key in the settings.', 
-              type: 'error'
-            });
-          }
+        chrome.tabs.sendMessage(tabId, { 
+          command: 'show-notification', 
+          message: 'Authentication error! Please check your API key.', 
+          type: 'error'
         });
+        return false;
       } else {
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          if (tabs[0]) {
-            chrome.tabs.sendMessage(tabs[0].id, { 
-              command: 'show-notification', 
-              message: 'Error refining content. Please check the base URL in the settings.', 
-              type: 'error'
-            });
-          }
+        chrome.tabs.sendMessage(tabId, { 
+          command: 'show-notification', 
+          message: 'Connection error! Please check the base URL in settings.', 
+          type: 'error'
         });
+        return false;
       }
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -444,6 +433,16 @@ function removeMarkdownData(tab) {
   });
 }
 
+/**
+ * Reverts the loading state of markdown data for a given tab.
+ *
+ * This function retrieves the markdown data from Chrome's local storage,
+ * updates the loading state of the markdown data for the specified tab,
+ * and then saves the updated markdown data back to local storage.
+ *
+ * @param {Object} tab - The tab object containing the URL of the tab.
+ * @param {string} tab.url - The URL of the tab to revert the markdown data for.
+ */
 function revertMarkdownData(tab) {
   chrome.storage.local.get(['markdownData'], (result) => {
     const markdownData = result.markdownData || [];
@@ -462,6 +461,25 @@ function revertMarkdownData(tab) {
     });
   });
 }
+/**
+ * Copies the current active tab's content as Markdown.
+ * 
+ * This function queries the active tab in the current window and sends a message
+ * to the content script to convert the content to Markdown. If the conversion is
+ * successful, it optionally refines the Markdown using a language model (LLM) if
+ * enabled and an API key is provided. Finally, it proceeds with copying and saving
+ * the Markdown content.
+ * 
+ * @function
+ * @name copyAsMarkdown
+ * 
+ * @example
+ * // Call the function to copy the active tab's content as Markdown
+ * copyAsMarkdown();
+ * 
+ * @throws Will log an error if no active tab is found or if there is an error sending
+ * the message to the content script.
+ */
 function copyAsMarkdown() {
   chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
     if (tabs[0]) {
@@ -488,12 +506,14 @@ function copyAsMarkdown() {
               
               if (enableLLM && apiKey) {
                 console.log("Refining markdown with LLM using prompt:", response.prompt);
-                finalMarkdown = await refineMDWithLLM(response.markdown, response.prompt, apiKey);
+                finalMarkdown = await refineMDWithLLM(response.markdown, response.prompt, apiKey, tab.id);
               } else {
                 console.log("Skipping LLM refinement:", { enableLLM, hasApiKey: !!apiKey });
               }
               
-              proceedWithCopyAndSave(tab, finalMarkdown);
+              if (finalMarkdown !== false) {
+                proceedWithCopyAndSave(tab, finalMarkdown);
+              }
             });
           } else {
             proceedWithCopyAndSave(tab, finalMarkdown);
