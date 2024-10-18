@@ -126,6 +126,7 @@ export function showDiffModal(url, oldMarkdown, newMarkdown, callback) {
 
   const acceptButton = document.createElement('button');
   acceptButton.textContent = 'Accept';
+  acceptButton.className = 'accept-button';
   acceptButton.style.backgroundColor = '#2E7D32';
   acceptButton.style.color = 'white';
   acceptButton.style.float = 'right';
@@ -166,6 +167,8 @@ export function showDiffModal(url, oldMarkdown, newMarkdown, callback) {
   });
 
   document.body.appendChild(modalOverlay);
+
+  return modalOverlay;
 }
 
 export function setupTipBox(tipBox, understandButton) {
