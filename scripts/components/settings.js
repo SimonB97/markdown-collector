@@ -15,10 +15,10 @@
  * along with Markdown Collector.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 document.addEventListener('DOMContentLoaded', () => {
   const cleanupToggle = document.getElementById('cleanup-toggle');
   const llmToggle = document.getElementById('llm-toggle');
+  const multitabToggle = document.getElementById('multitab-toggle');
   const llmWarning = document.getElementById('llm-warning');
   const apiKeyInput = document.getElementById('api-key');
   const modelSelect = document.getElementById('model-select');
@@ -30,9 +30,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const DEFAULT_BASE_URL = 'https://api.openai.com/v1/chat/completions';
 
   // Initialize settings
-  chrome.storage.local.get(['enableCleanup', 'enableLLM', 'apiKey', 'model', 'baseUrl'], (result) => {
+  chrome.storage.local.get(['enableCleanup', 'enableLLM', 'enableMultitab', 'apiKey', 'model', 'baseUrl'], (result) => {
     cleanupToggle.checked = result.enableCleanup || false;
     llmToggle.checked = result.enableLLM || false;
+    multitabToggle.checked = result.enableMultitab !== undefined ? result.enableMultitab : true; // Enable by default
     apiKeyInput.value = result.apiKey || '';
     if (result.model && !['gpt-4o-mini', 'gpt-4o'].includes(result.model)) {
       modelSelect.value = 'custom';
@@ -43,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     baseUrlInput.value = result.baseUrl || DEFAULT_BASE_URL;
     updateToggleVisually(cleanupToggle);
     updateToggleVisually(llmToggle);
+    updateToggleVisually(multitabToggle);
     subSettingsContainer.style.display = result.enableLLM ? 'block' : 'none';
     updateModelInputVisibility();
     updateLLMWarning();
@@ -64,6 +66,14 @@ document.addEventListener('DOMContentLoaded', () => {
       updateToggleVisually(llmToggle);
       subSettingsContainer.style.display = isEnabled ? 'block' : 'none';
       updateLLMWarning();
+    });
+  });
+
+  multitabToggle.addEventListener('change', () => {
+    const isEnabled = multitabToggle.checked;
+    chrome.storage.local.set({ enableMultitab: isEnabled }, () => {
+      console.log(`Multi-tab shortcuts ${isEnabled ? 'enabled' : 'disabled'}`);
+      updateToggleVisually(multitabToggle);
     });
   });
 

@@ -15,7 +15,6 @@
  * along with Markdown Collector.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log("Received message:", request);
 
@@ -39,7 +38,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-
+/**
+ * Saves the current tab's URL to the markdown data storage.
+ *
+ * This function queries the active tab in the current window, sends a message
+ * to the content script to convert the content to Markdown, and then saves the
+ * Markdown content to the storage.
+ *
+ * @param {function} sendResponse - The callback function to respond to the
+ *                                  message sender.
+ */
 function saveCurrentTabUrl(sendResponse) {
   chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
     if (tabs[0]) {
@@ -78,7 +86,7 @@ function saveCurrentTabUrl(sendResponse) {
               } else {
                 console.log("Skipping LLM refinement:", { enableLLM, hasPrompt: !!response.prompt, hasApiKey: !!apiKey });
               }
-              
+　　 　 　 　
               if (finalMarkdown !== false) {
                 let updatedMarkdownData = [...markdownData];
                 if (isNewEntry) {
@@ -95,7 +103,7 @@ function saveCurrentTabUrl(sendResponse) {
                     savedAt: new Date().toISOString()
                   };
                 }
-                
+　 　 　 　 　
                 chrome.storage.local.set({ markdownData: updatedMarkdownData }, () => {
                   if (chrome.runtime.lastError) {
                     console.error("Error setting markdownData:", chrome.runtime.lastError);
@@ -136,6 +144,21 @@ function saveCurrentTabUrl(sendResponse) {
   });
 }
 
+/**
+ * Refines the given Markdown content using a language model (LLM) and returns
+ * the refined Markdown content.
+ *
+ * This function sends a request to the OpenAI API to refine the Markdown content
+ * based on the provided prompt and API key.
+ *
+ * @param {string} markdown - The Markdown content to refine.
+ * @param {string} prompt - The prompt to use for refining the Markdown content.
+ * @param {string} apiKey - The API key to use for the OpenAI API.
+ * @param {number} tabId - The ID of the tab to show the loading indicator.
+ *
+ * @returns {Promise<string>} A promise that resolves with the refined Markdown
+ *                            content or null if refinement fails.
+ */
 async function refineMDWithLLM(markdown, prompt, apiKey, tabId) {
   console.log('Refining markdown with LLM. Prompt:', prompt);
   console.log('API Key (first 4 characters):', apiKey ? apiKey.substring(0, 4) : 'N/A');
@@ -253,6 +276,16 @@ async function refineMDWithLLM(markdown, prompt, apiKey, tabId) {
   }
 }
 
+/**
+ * Updates the markdown data for a given tab.
+ *
+ * This function retrieves the markdown data from Chrome's local storage,
+ * updates the markdown data for the specified tab, and then saves the updated
+ * markdown data back to local storage.
+ *
+ * @param {Object} tab - The tab object containing the URL of the tab.
+ * @param {string} markdown - The Markdown content to update.
+ */
 function updateMarkdownData(tab, markdown) {
   console.log("Updating markdown data for tab:", tab.url);
   chrome.storage.local.get(['markdownData'], (result) => {
@@ -274,6 +307,13 @@ function updateMarkdownData(tab, markdown) {
   });
 }
 
+/**
+ * Opens the Markdown page in a new tab.
+ *
+ * This function checks if the Markdown page is already open in a tab and
+ * focuses on that tab if it exists. Otherwise, it creates a new tab with the
+ * Markdown page.
+ */
 function openMarkdownPage() {
   const markdownUrl = chrome.runtime.getURL("markdown.html");
 
@@ -296,6 +336,13 @@ function openMarkdownPage() {
   });
 }
 
+/**
+ * Opens the settings page in a new tab.
+ *
+ * This function checks if the settings page is already open in a tab and
+ * focuses on that tab if it exists. Otherwise, it creates a new tab with the
+ * settings page.
+ */
 function openSettingsPage() {
   const settingsUrl = chrome.runtime.getURL("settings.html");
 
@@ -318,6 +365,18 @@ function openSettingsPage() {
   });
 }
 
+/**
+ * Fetches the content of a given URL.
+ *
+ * This function sends a GET request to the specified URL and returns the
+ * response text.
+ *
+ * @param {string} url - The URL to fetch.
+ * @param {function} sendResponse - The callback function to respond to the
+ *                                  message sender.
+ *
+ * @returns {Promise<string>} A promise that resolves with the response text.
+ */
 function fetchUrl(url, sendResponse) {
   console.log(`Fetching URL: ${url}`);
   
@@ -342,6 +401,19 @@ function fetchUrl(url, sendResponse) {
   return true;
 }
 
+/**
+ * Performs a fetch operation for a given URL.
+ *
+ * This function creates a new tab with the specified URL, executes a content
+ * script to fetch the page content, and then sends the fetched content to the
+ * message sender.
+ *
+ * @param {string} url - The URL to fetch.
+ * @param {function} sendResponse - The callback function to respond to the
+ *                                  message sender.
+ *
+ * @returns {Promise<string>} A promise that resolves with the response text.
+ */
 function performFetch(url, sendResponse) {
   console.log(`Performing fetch for URL: ${url}`);
   
@@ -361,20 +433,175 @@ function performFetch(url, sendResponse) {
   return true;
 }
 
-chrome.commands.onCommand.addListener((command) => {
+/**
+ * Saves multiple tabs' content as Markdown.
+ *
+ * This function sends a message to the content script to convert the content
+ * of each tab to Markdown, refines the Markdown content using a language model
+ * (LLM) if enabled, and then saves the refined Markdown content to the storage.
+ *
+ * @param {Array<Object>} tabs - The array of tab objects to save.
+ * @param {boolean} copyToClipboard - Whether to copy the Markdown content to
+ *                                    the clipboard.
+ */
+async function saveMultipleTabs(tabs, copyToClipboard = false) {
+  const results = [];
+  for (const tab of tabs) {
+    try {
+      const result = await new Promise((resolve) => {
+        chrome.tabs.sendMessage(tab.id, { command: 'convert-to-markdown' }, async (response) => {
+          if (chrome.runtime.lastError) {
+            console.error("Error sending message to content script:", chrome.runtime.lastError);
+            resolve({ success: false, tab, error: chrome.runtime.lastError });
+            return;
+          }
+          
+          if (response && response.markdown) {
+            if (response.cancelled) {
+              resolve({ success: false, tab, cancelled: true });
+              return;
+            }
+            
+            let finalMarkdown = response.markdown;
+            if (response.enableLLM && response.prompt) {
+              finalMarkdown = await refineMDWithLLM(response.markdown, response.prompt, response.apiKey, tab.id);
+            }
+            
+            if (finalMarkdown !== false) {
+              resolve({ success: true, tab, markdown: finalMarkdown });
+            } else {
+              resolve({ success: false, tab, error: "Failed to process markdown" });
+            }
+          } else {
+            resolve({ success: false, tab, error: "No markdown received" });
+          }
+        });
+      });
+      results.push(result);
+    } catch (error) {
+      console.error(`Error processing tab ${tab.url}:`, error);
+      results.push({ success: false, tab, error });
+    }
+  }
+
+  // Update storage with successful results
+  const successfulResults = results.filter(r => r.success);
+  if (successfulResults.length > 0) {
+    chrome.storage.local.get(['markdownData'], (result) => {
+      const markdownData = result.markdownData || [];
+      const updatedMarkdownData = [...markdownData];
+
+      for (const { tab, markdown } of successfulResults) {
+        const existingIndex = updatedMarkdownData.findIndex(item => item.url === tab.url);
+        if (existingIndex !== -1) {
+          updatedMarkdownData[existingIndex] = {
+            ...updatedMarkdownData[existingIndex],
+            markdown,
+            savedAt: new Date().toISOString()
+          };
+        } else {
+          updatedMarkdownData.push({
+            url: tab.url,
+            title: tab.title,
+            markdown,
+            savedAt: new Date().toISOString()
+          });
+        }
+      }
+
+      chrome.storage.local.set({ markdownData: updatedMarkdownData }, () => {
+        if (chrome.runtime.lastError) {
+          console.error("Error saving markdown data:", chrome.runtime.lastError);
+        } else {
+          console.log("Successfully saved markdown for multiple tabs");
+          
+          if (copyToClipboard) {
+            const combinedMarkdown = successfulResults
+              .map(({ tab, markdown }) => `<url>${tab.url}</url>\n<title>${tab.title}</title>\n${markdown}`)
+              .join('\n\n\n');
+            
+            // Copy to clipboard using background page
+            const textarea = document.createElement('textarea');
+            textarea.value = combinedMarkdown;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+          }
+
+          // Show notification on the last active tab
+          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs[0]) {
+              chrome.tabs.sendMessage(tabs[0].id, {
+                command: 'show-notification',
+                message: `Successfully processed ${successfulResults.length} tab(s)${copyToClipboard ? ' and copied to clipboard' : ''}`
+              });
+            }
+          });
+        }
+      });
+    });
+  }
+
+  // Show errors if any
+  const failedResults = results.filter(r => !r.success);
+  if (failedResults.length > 0) {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]) {
+        chrome.tabs.sendMessage(tabs[0].id, {
+          command: 'show-notification',
+          message: `Failed to process ${failedResults.length} tab(s)`,
+          type: 'error'
+        });
+      }
+    });
+  }
+}
+
+/**
+ * Listens for commands from the browser and performs the corresponding actions.
+ *
+ * This function checks if the multi-tab mode is enabled and performs the
+ * corresponding action for each command.
+ *
+ * @param {string} command - The command received from the browser.
+ */
+chrome.commands.onCommand.addListener(async (command) => {
   console.log("Command received:", command);
-  if (command === "save-url") {
-    console.log("Executing save-url command");
-    saveCurrentTabUrl();
-  } else if (command === "open-markdown-page") {
-    console.log("Executing open-markdown-page command");
-    openMarkdownPage();
-  } else if (command === "copy-as-markdown") {
-    console.log("Executing copy-as-markdown command");
-    copyAsMarkdown();
+  
+  // Check if multi-tab mode is enabled
+  const { enableMultitab } = await new Promise(resolve => {
+    chrome.storage.local.get(['enableMultitab'], resolve);
+  });
+
+  if (enableMultitab) {
+    // Get highlighted tabs in current window
+    chrome.tabs.query({ highlighted: true, currentWindow: true }, (tabs) => {
+      if (tabs.length > 0) {
+        if (command === "save-url") {
+          saveMultipleTabs(tabs, false);
+        } else if (command === "copy-as-markdown") {
+          saveMultipleTabs(tabs, true);
+        }
+      }
+    });
+  } else {
+    // Original single-tab behavior
+    if (command === "save-url") {
+      saveCurrentTabUrl();
+    } else if (command === "copy-as-markdown") {
+      copyAsMarkdown();
+    } else if (command === "open-markdown-page") {
+      openMarkdownPage();
+    }
   }
 });
 
+/**
+ * Checks if the commands are registered correctly.
+ *
+ * This function retrieves the registered commands and logs them to the console.
+ */
 function checkCommands() {
   chrome.commands.getAll((commands) => {
     console.log("Registered commands:", commands);
@@ -383,6 +610,16 @@ function checkCommands() {
 
 checkCommands();
 
+/**
+ * Converts a JSON object to Markdown content.
+ *
+ * This function takes a JSON object with title and content properties and
+ * converts it to Markdown content.
+ *
+ * @param {Object} json - The JSON object to convert.
+ *
+ * @returns {string} The Markdown content.
+ */
 function jsonToMarkdown(json) {
   let markdown = '';
   
@@ -427,6 +664,15 @@ function jsonToMarkdown(json) {
   return markdown.trim();
 }
 
+/**
+ * Removes the markdown data for a given tab.
+ *
+ * This function retrieves the markdown data from Chrome's local storage,
+ * removes the markdown data for the specified tab, and then saves the updated
+ * markdown data back to local storage.
+ *
+ * @param {Object} tab - The tab object containing the URL of the tab.
+ */
 function removeMarkdownData(tab) {
   chrome.storage.local.get(['markdownData'], (result) => {
     const markdownData = result.markdownData || [];
@@ -449,7 +695,6 @@ function removeMarkdownData(tab) {
  * and then saves the updated markdown data back to local storage.
  *
  * @param {Object} tab - The tab object containing the URL of the tab.
- * @param {string} tab.url - The URL of the tab to revert the markdown data for.
  */
 function revertMarkdownData(tab) {
   chrome.storage.local.get(['markdownData'], (result) => {
@@ -469,24 +714,15 @@ function revertMarkdownData(tab) {
     });
   });
 }
+
 /**
  * Copies the current active tab's content as Markdown.
- * 
+ *
  * This function queries the active tab in the current window and sends a message
  * to the content script to convert the content to Markdown. If the conversion is
  * successful, it optionally refines the Markdown using a language model (LLM) if
  * enabled and an API key is provided. Finally, it proceeds with copying and saving
  * the Markdown content.
- * 
- * @function
- * @name copyAsMarkdown
- * 
- * @example
- * // Call the function to copy the active tab's content as Markdown
- * copyAsMarkdown();
- * 
- * @throws Will log an error if no active tab is found or if there is an error sending
- * the message to the content script.
  */
 function copyAsMarkdown() {
   chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
@@ -511,14 +747,14 @@ function copyAsMarkdown() {
             chrome.storage.local.get(['enableLLM', 'apiKey'], async (result) => {
               const enableLLM = result.enableLLM || false;
               const apiKey = result.apiKey;
-              
+　　 　 　 　
               if (enableLLM && apiKey) {
                 console.log("Refining markdown with LLM using prompt:", response.prompt);
                 finalMarkdown = await refineMDWithLLM(response.markdown, response.prompt, apiKey, tab.id);
               } else {
                 console.log("Skipping LLM refinement:", { enableLLM, hasApiKey: !!apiKey });
               }
-              
+　　 　 　 　
               if (finalMarkdown !== false) {
                 proceedWithCopyAndSave(tab, finalMarkdown);
               }
@@ -537,6 +773,15 @@ function copyAsMarkdown() {
   });
 }
 
+/**
+ * Proceeds with copying and saving the Markdown content.
+ *
+ * This function saves the Markdown content to the storage and copies it to the
+ * clipboard.
+ *
+ * @param {Object} tab - The tab object containing the URL of the tab.
+ * @param {string} markdown - The Markdown content to copy and save.
+ */
 function proceedWithCopyAndSave(tab, markdown) {
   const markdownText = `<url>${tab.url}</url>\n<title>${tab.title}</title>\n${markdown}`;
   
@@ -548,14 +793,14 @@ function proceedWithCopyAndSave(tab, markdown) {
     if (existingIndex !== -1) {
       markdownData[existingIndex] = {
         ...markdownData[existingIndex],
-        markdown: markdown,
+        markdown,
         savedAt: new Date().toISOString()
       };
     } else {
       markdownData.push({
         url: tab.url,
         title: tab.title,
-        markdown: markdown,
+        markdown,
         savedAt: new Date().toISOString()
       });
     }
