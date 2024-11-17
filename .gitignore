@@ -5,3 +5,4 @@ context-collector.zip
 .cursorignore
 node_modules/
 .vscode/
+.history/
