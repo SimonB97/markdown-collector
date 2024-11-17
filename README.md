@@ -1,58 +1,86 @@
 # Markdown Collector - Website to Markdown
 
-A minimalistic Firefox extension that allows you to collect URLs, convert the content of each page into Markdown and copy it to your clipboard effortlessly, designed specifically for enhancing interactions with AI assistants like ChatGPT.
+A Firefox extension that helps you save web pages as Markdown and manage them efficiently. Perfect for sharing content with AI assistants like ChatGPT.
 
 ## Features
 
-- **Quick Save:** Use a keyboard shortcut to save the current page's URL and convert its content to Markdown.
-- **Markdown Collection:** Access a centralized page to view and manage all your saved URLs and their Markdown content.
-- **Editable Content:** Edit Markdown directly within the collection page. Changes are saved automatically upon editing.
-- **Copy Markdown:** Concatenate and copy all collected Markdown content to your clipboard, ready for pasting into AI chats.
-- **Bulk Actions:** Select multiple entries for copying or deleting, perfect for compiling comprehensive context for AI assistants.
-- **Content Updates:** Refresh and review changes in Markdown content from source pages, ensuring your AI always has the latest information.
+- **Quick Save & Copy:**
+
+  - `Alt+I`: Save current page(s) as Markdown
+  - `Alt+C`: Save and copy to clipboard
+  - `Alt+M`: View your collection
+
+- **Process Multiple Pages at Once:**
+
+  1. Select multiple tabs (use Ctrl+Click)
+  2. Press `Alt+I` or `Alt+C`
+  3. Choose how to refine them with AI:
+     - **Individual:** Apply the same refinement to each page separately (press Enter)
+     - **Combined:** Merge all pages into one document and apply the same refinement prompt to the combined content (press Shift+Enter)
+
+- **AI-Powered Refinement:**
+
+  - Let AI help structure and clean up your content
+  - Works with both single pages and multiple pages
+  - Supports OpenAI and local AI models
+
+- **Smart Features:**
+  - Clean up page content automatically (remove ads, menus, etc.)
+  - Search through your saved pages
+  - Edit saved content directly
+  - Track and review content changes
 
 ## Installation
 
-**Install from the Firefox Add-ons Store: [Markdown Collector](https://addons.mozilla.org/de/firefox/addon/markdown-collector/).**
+**Get it from Firefox Add-ons: [Markdown Collector](https://addons.mozilla.org/de/firefox/addon/markdown-collector/)**
 
-_or (for development)_
+_For developers:_
 
-1. **Clone the Repository:**
+1. Clone: `git clone https://github.com/simonb97/markdown-collector.git`
+2. Load in Firefox:
+   - Go to `about:debugging#/runtime/this-firefox`
+   - Click "Load Temporary Add-on"
+   - Select `manifest.json`
 
-   ```bash
-   git clone https://github.com/simonb97/markdown-collector.git
-   ```
+## Quick Start Guide
 
-2. **Load the Extension in Firefox:**
-   - Open Firefox and navigate to `about:debugging#/runtime/this-firefox`.
-   - Click on **"Load Temporary Add-on..."**.
-   - Select the `manifest.json` file from the cloned repository.
+1. **Save Web Pages:**
 
-## Usage
+   - Single page: Press `Alt+I` or `Alt+C`
+   - Multiple pages:
+     - Hold Ctrl and click on tabs you want to save
+     - Press `Alt+I` or `Alt+C`
+     - Choose to process them separately or combine them
 
-1. **Save a Page:**
+2. **Use AI Refinement:**
 
-   - Press the keyboard shortcut `Alt+I` to save the current page's URL and convert its content to Markdown
-   - or click the extension icon and select **"Copy as Markdown"**, which will copy the contents of the current page to your clipboard and save it to the collection.
+   - Enable it in settings
+   - Add your API key
+   - When saving, type what you want the AI to do with the content
+   - For multiple pages:
+     - Press Enter: Apply to each page separately
+     - Press Shift+Enter: Apply to all pages combined
 
-2. **View and Manage Collected Markdown:**
-
-   - Press the keyboard shortcut `Alt+M` or click the extension icon and select **"Open Collection"** to view all saved URLs and their Markdown content.
-   - In the collection page, you can:
-     - **Edit Markdown:** Click inside a Markdown box to edit its content. Changes are saved automatically.
-     - **Copy Markdown:** Select desired entries and click the **"Copy"** button to copy the concatenated Markdown to your clipboard, ready for pasting into AI chats.
-     - **Delete Entries:** Select entries and click the **"Delete"** button to remove them from your collection.
-     - **Update Markdown:** Select entries and click the **"Update"** button to refresh the Markdown content from the source page. This will show the diff of the old and new markdown content, which you can accept or reject **at the bottom of the diff popup**.
-
-3. **Copy Markdown:**
-   - After ensuring all Markdown content is fully scraped (this is generally very fast), use the **"Copy"** button to copy all Markdown data, including URLs and titles, separated by XML tags, optimized for sharing with AI assistants.
+3. **Manage Your Collection:**
+   - Press `Alt+M` to see all saved pages
+   - Edit content directly
+   - Use the search box to find pages
+   - Select multiple entries to:
+     - Copy them together
+     - Update their content
+     - Delete them
 
 ## Keyboard Shortcuts
 
-- **Save Current URL and Convert to Markdown:** `Alt+I`
-- **Open Markdown Collection Page:** `Alt+M`
+- **Save and Convert:** `Alt+I`
+- **Save, Convert, and Copy:** `Alt+C`
+- **Open Collection:** `Alt+M`
+- **In Prompt Dialog:**
+  - Enter: Process individually
+  - Shift+Enter: Process as batch (when multiple tabs selected)
+  - Esc: Cancel operation
 
-_You can customize these shortcuts in the Firefox Add-ons settings._
+_Shortcuts can be customized in Firefox Add-ons settings._
 
 ## Roadmap
 
