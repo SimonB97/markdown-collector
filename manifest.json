@@ -13,7 +13,12 @@
     "https://api.openai.com/"
   ],
   "background": {
-    "scripts": ["scripts/components/background.js"],
+    "scripts": [
+      "scripts/components/markdownUtils.js",
+      "scripts/components/tabManager.js",
+      "scripts/components/llmProcessor.js",
+      "scripts/components/background.js"
+    ],
     "type": "module"
   },
   "browser_specific_settings": {

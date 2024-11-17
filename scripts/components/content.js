@@ -17,52 +17,60 @@
 
 
 let isConverting = false;
+let isShowingPrompt = false;
 
 // Listen for messages from the background or popup scripts
 browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log("Received message in content script:", request);
 
-  if (request.command === 'convert-to-markdown' && !isConverting) {
+  if (request.command === 'convert-to-markdown' && !isConverting && !isShowingPrompt) {
     isConverting = true;
+    isShowingPrompt = true;
+    
     browser.storage.local.get(['enableCleanup', 'enableLLM']).then(async (result) => {
-      const enableCleanup = result.enableCleanup || false;
-      const enableLLM = result.enableLLM || false;
-      
-      let markdown;
-      if (enableCleanup && typeof Readability !== 'undefined') {
-        markdown = await convertPageToMarkdownWithCleanup();
-      } else {
-        markdown = convertPageToMarkdown();
-      }
+      try {
+        const enableCleanup = result.enableCleanup || false;
+        const enableLLM = result.enableLLM || false;
+        
+        let markdown;
+        if (enableCleanup && typeof Readability !== 'undefined') {
+          markdown = await convertPageToMarkdownWithCleanup();
+        } else {
+          markdown = convertPageToMarkdown();
+        }
 
-      if (enableLLM) {
-        console.log("LLM refinement is enabled. Showing prompt popup.");
-        try {
-          const response = await showPromptPopup();
-          console.log("Popup response:", response);
-          if (response.action === 'refine') {
-            sendResponse({ markdown, prompt: response.prompt });
-          } else if (response.action === 'save') {
+        if (enableLLM) {
+          console.log("LLM refinement is enabled. Showing prompt popup.");
+          try {
+            if (request.isFirstTab) {
+              const response = await showPromptPopup(request.isMultiTab);
+              console.log("Popup response:", response);
+              sendResponse({ ...response, markdown });
+            } else {
+              sendResponse({ markdown });
+            }
+          } catch (error) {
+            console.error("Error showing prompt popup:", error);
             sendResponse({ markdown });
-          } else if (response.action === 'cancel') {
-            sendResponse({ markdown, cancelled: true });
           }
-        } catch (error) {
-          console.error("Error showing prompt popup:", error);
+        } else {
+          console.log("LLM refinement is disabled. Sending markdown without prompt.");
           sendResponse({ markdown });
         }
-      } else {
-        console.log("LLM refinement is disabled. Sending markdown without prompt.");
-        sendResponse({ markdown });
+      } catch (error) {
+        console.error("Error processing content:", error);
+        sendResponse({ markdown: '' });
+      } finally {
+        isConverting = false;
+        isShowingPrompt = false;
       }
-      
-      isConverting = false;
     }).catch((error) => {
       console.error("Error accessing storage:", error);
       sendResponse({ markdown: '' });
       isConverting = false;
+      isShowingPrompt = false;
     });
-    return true; // Indicates asynchronous response
+    return true;
   } else if (request.command === 'show-notification') {
     showNotification(request.message, request.type);
   } else if (request.command === 'show-loading') {
@@ -144,7 +152,7 @@ function convertPageToMarkdown() {
   return `# ${title}\n\n${bodyMarkdown}`;
 }
 
-function showPromptPopup() {
+function showPromptPopup(isMultiTab = false) {
   return new Promise((resolve) => {
     console.log("Creating prompt popup");
     const popup = document.createElement('div');
@@ -284,6 +292,30 @@ function showPromptPopup() {
 
     // Focus the input field when the popup is shown
     promptInput.focus();
+
+    // Add batch processing button for multi-tab
+    if (isMultiTab) {
+      const batchButton = document.createElement('button');
+      batchButton.id = 'batch-process';
+      batchButton.innerHTML = 'Process as Batch<span>(Shift+Enter)</span>';
+      document.querySelector('.button-container').appendChild(batchButton);
+      
+      batchButton.addEventListener('click', () => {
+        const prompt = promptInput.value;
+        document.body.removeChild(popup);
+        resolve({ action: 'batch', prompt });
+      });
+      
+      // Add Shift+Enter handler
+      promptInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && event.shiftKey) {
+          event.preventDefault();
+          const prompt = promptInput.value;
+          document.body.removeChild(popup);
+          resolve({ action: 'batch', prompt });
+        }
+      });
+    }
   });
 }
 

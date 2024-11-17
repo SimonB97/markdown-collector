@@ -91,3 +91,52 @@ export function generateMockData() {
 
     return mockData;
   }
+
+/**
+   * Converts JSON data to markdown format.
+   * @param {Object} json - The JSON data to convert to markdown.
+   * @returns {string} - The converted markdown format.
+   */
+export function jsonToMarkdown(json) {
+  let markdown = '';
+  
+  if (json.title) {
+    markdown += `# ${json.title}\n\n`;
+  }
+  
+  if (json.content && Array.isArray(json.content)) {
+    json.content.forEach(item => {
+      switch (item.type) {
+        case 'heading':
+          const level = item.level || 2;
+          markdown += `${'#'.repeat(level)} ${item.content}\n\n`;
+          break;
+        case 'paragraph':
+          markdown += `${item.content}\n\n`;
+          break;
+        case 'list':
+          if (Array.isArray(item.content)) {
+            item.content.forEach(listItem => {
+              markdown += `- ${listItem}\n`;
+            });
+            markdown += '\n';
+          }
+          break;
+        case 'code':
+          if (item.language) {
+            markdown += `\`\`\`${item.language}\n${item.content}\n\`\`\`\n\n`;
+          } else {
+            markdown += `\`\`\`\n${item.content}\n\`\`\`\n\n`;
+          }
+          break;
+        case 'quote':
+          markdown += `> ${item.content}\n\n`;
+          break;
+        default:
+          markdown += `${item.content}\n\n`;
+      }
+    });
+  }
+  
+  return markdown.trim();
+}
