@@ -73,12 +73,15 @@ export async function processBatchContent(tabs, prompt, apiKey) {
 async function combineTabsContent(tabs) {
   let combined = '';
   for (const tab of tabs) {
-    const response = await browser.tabs.sendMessage(tab.id, { command: 'convert-to-markdown' });
+    const response = await browser.tabs.sendMessage(tab.id, { 
+      command: 'convert-to-markdown',
+      isFirstTab: false 
+    });
     if (response && response.markdown) {
-      combined += `<url>${tab.url}</url>\n<title>${tab.title}</title>\n${response.markdown}\n\n`;
+      combined += `\n\n## ${tab.title}\n<url>${tab.url}</url>\n\n${response.markdown}\n\n`;
     }
   }
-  return combined;
+  return combined.trim();
 }
 
 async function callLLMAPI(markdown, prompt, apiKey, model = 'gpt-4o-mini', baseUrl = 'https://api.openai.com/v1/chat/completions') {

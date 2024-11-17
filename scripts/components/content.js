@@ -267,6 +267,13 @@ function showPromptPopup(isMultiTab = false) {
       resolve({ action: 'cancel' });
     }
 
+    function processBatch() {
+      const prompt = promptInput.value;
+      document.body.removeChild(popup);
+      console.log("Processing as batch:", prompt);
+      resolve({ action: 'batch', prompt });
+    }
+
     acceptButton.addEventListener('click', acceptPrompt);
     saveWithoutRefineButton.addEventListener('click', saveWithoutRefining);
     cancelButton.addEventListener('click', cancelSave);
@@ -275,6 +282,14 @@ function showPromptPopup(isMultiTab = false) {
     promptInput.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') {
         event.preventDefault();
+        
+        // Check for Shift+Enter first
+        if (event.shiftKey && isMultiTab) {
+          processBatch();
+          return;
+        }
+        
+        // Regular Enter handling
         if (promptInput.value.trim()) {
           acceptPrompt();
         } else {
@@ -300,21 +315,7 @@ function showPromptPopup(isMultiTab = false) {
       batchButton.innerHTML = 'Process as Batch<span>(Shift+Enter)</span>';
       document.querySelector('.button-container').appendChild(batchButton);
       
-      batchButton.addEventListener('click', () => {
-        const prompt = promptInput.value;
-        document.body.removeChild(popup);
-        resolve({ action: 'batch', prompt });
-      });
-      
-      // Add Shift+Enter handler
-      promptInput.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' && event.shiftKey) {
-          event.preventDefault();
-          const prompt = promptInput.value;
-          document.body.removeChild(popup);
-          resolve({ action: 'batch', prompt });
-        }
-      });
+      batchButton.addEventListener('click', processBatch);
     }
   });
 }

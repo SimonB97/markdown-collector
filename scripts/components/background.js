@@ -63,9 +63,12 @@ async function saveCurrentTabUrl() {
     
     // If LLM is disabled or no API key, process all tabs directly
     if (!enableLLM || !apiKey) {
-      for (const tab of selectedTabs) {
-        await processTab(tab, markdownData);
-      }
+      await processTabsDirectly(selectedTabs, markdownData);
+      // Show success notification on first tab
+      await browser.tabs.sendMessage(selectedTabs[0].id, { 
+        command: 'show-notification', 
+        message: `${selectedTabs.length} page${selectedTabs.length > 1 ? 's' : ''} saved successfully` 
+      });
       return { status: "URLs saved successfully" };
     }
     
@@ -88,18 +91,27 @@ async function saveCurrentTabUrl() {
       return { status: "Operation cancelled" };
     }
 
+    // If no prompt provided, process directly without LLM
+    if (firstTabResponse.action === 'save' || !firstTabResponse.prompt?.trim()) {
+      await processTabsDirectly(selectedTabs, markdownData);
+      return { status: "URLs saved without refinement" };
+    }
+
     if (firstTabResponse.action === 'batch') {
       console.log("Processing as batch");
-      // Process all tabs as a batch
       const batchResult = await processBatchContent(selectedTabs, firstTabResponse.prompt, apiKey);
       if (batchResult) {
         markdownData.push(batchResult);
         await browser.storage.local.set({ markdownData });
+        await browser.tabs.sendMessage(selectedTabs[0].id, { 
+          command: 'show-notification', 
+          message: `${selectedTabs.length} pages processed and saved as batch` 
+        });
         return { status: "Batch processing completed successfully" };
       }
     } else if (firstTabResponse.action === 'refine') {
       console.log("Processing tabs individually with prompt");
-      // Process tabs individually with the same prompt
+      let processedCount = 0;
       for (const tab of selectedTabs) {
         const tabResponse = await browser.tabs.sendMessage(tab.id, { 
           command: 'convert-to-markdown',
@@ -107,6 +119,7 @@ async function saveCurrentTabUrl() {
         });
         
         if (tabResponse && tabResponse.markdown) {
+          processedCount++;
           const refinedMarkdown = await refineMDWithLLM(
             tabResponse.markdown,
             firstTabResponse.prompt,
@@ -132,6 +145,10 @@ async function saveCurrentTabUrl() {
         }
       }
       await browser.storage.local.set({ markdownData });
+      await browser.tabs.sendMessage(selectedTabs[0].id, { 
+        command: 'show-notification', 
+        message: `${processedCount} page${processedCount > 1 ? 's' : ''} processed and saved` 
+      });
       return { status: "Individual processing completed successfully" };
     }
     
@@ -139,8 +156,51 @@ async function saveCurrentTabUrl() {
     
   } catch (error) {
     console.error("Error in saveCurrentTabUrl:", error);
+    // Show error notification on first tab
+    if (selectedTabs?.length > 0) {
+      await browser.tabs.sendMessage(selectedTabs[0].id, { 
+        command: 'show-notification', 
+        message: 'Error processing pages', 
+        type: 'error' 
+      });
+    }
     throw error;
   }
+}
+
+// Update processTabsDirectly to handle notifications
+async function processTabsDirectly(tabs, markdownData) {
+  let processedCount = 0;
+  for (const tab of tabs) {
+    try {
+      const response = await browser.tabs.sendMessage(tab.id, { command: 'convert-to-markdown' });
+      if (response && response.markdown) {
+        processedCount++;
+        const existingIndex = markdownData.findIndex(item => item.url === tab.url);
+        const newEntry = {
+          url: tab.url,
+          title: tab.title,
+          markdown: response.markdown,
+          savedAt: new Date().toISOString()
+        };
+        
+        if (existingIndex !== -1) {
+          markdownData[existingIndex] = newEntry;
+        } else {
+          markdownData.push(newEntry);
+        }
+      }
+    } catch (error) {
+      console.error(`Error processing tab ${tab.url}:`, error);
+      await browser.tabs.sendMessage(tab.id, { 
+        command: 'show-notification', 
+        message: 'Error processing page', 
+        type: 'error' 
+      });
+    }
+  }
+  await browser.storage.local.set({ markdownData });
+  return processedCount;
 }
 
 async function processTab(tab, markdownData) {
@@ -291,7 +351,11 @@ browser.commands.onCommand.addListener((command) => {
     openMarkdownPage();
   } else if (command === "copy-as-markdown") {
     console.log("Executing copy-as-markdown command");
-    copyAsMarkdown();
+    copyAsMarkdown().then(() => {
+      console.log("Copy as markdown completed");
+    }).catch(error => {
+      console.error("Error in copy-as-markdown:", error);
+    });
   }
 });
 
@@ -408,95 +472,156 @@ function revertMarkdownData(tab) {
  * @throws Will log an error if no active tab is found or if there is an error sending
  * the message to the content script.
  */
-function copyAsMarkdown() {
-  browser.tabs.query({active: true, currentWindow: true}, function(tabs) {
-    if (tabs[0]) {
-      const tab = tabs[0];
-      browser.tabs.sendMessage(tab.id, { command: 'convert-to-markdown' }, async (response) => {
-        if (browser.runtime.lastError) {
-          console.error("Error sending message to content script:", browser.runtime.lastError);
-          return;
-        }
-        
-        if (response && response.markdown) {
-          if (response.cancelled) {
-            console.log("Copy process was cancelled by the user");
-            return; // Exit the function silently if cancelled
-          }
-
-          let finalMarkdown = response.markdown;
-          
-          // Check if LLM refinement is enabled and a prompt was provided
-          if (response.prompt) {
-            browser.storage.local.get(['enableLLM', 'apiKey'], async (result) => {
-              const enableLLM = result.enableLLM || false;
-              const apiKey = result.apiKey;
-              
-              if (enableLLM && apiKey) {
-                console.log("Refining markdown with LLM using prompt:", response.prompt);
-                finalMarkdown = await refineMDWithLLM(response.markdown, response.prompt, apiKey, tab.id);
-              } else {
-                console.log("Skipping LLM refinement:", { enableLLM, hasApiKey: !!apiKey });
-              }
-              
-              if (finalMarkdown !== false) {
-                proceedWithCopyAndSave(tab, finalMarkdown);
-              }
-            });
-          } else {
-            proceedWithCopyAndSave(tab, finalMarkdown);
-          }
-        } else {
-          console.error("No markdown received from content script");
-          browser.tabs.sendMessage(tab.id, { command: 'show-notification', message: 'Failed to generate Markdown', type: 'error' });
-        }
-      });
-    } else {
-      console.error("No active tab found");
+async function copyAsMarkdown() {
+  try {
+    const selectedTabs = await getSelectedTabs();
+    console.log("Selected tabs for copy:", selectedTabs);
+    
+    if (!selectedTabs.length) {
+      console.error("No tabs selected");
+      return;
     }
-  });
+
+    const result = await browser.storage.local.get(['enableLLM', 'apiKey']);
+    const enableLLM = result.enableLLM || false;
+    const apiKey = result.apiKey;
+
+    // If LLM is disabled or no API key, process all tabs directly
+    if (!enableLLM || !apiKey) {
+      await copyTabsDirectly(selectedTabs);
+      return;
+    }
+
+    // For LLM processing with multiple tabs
+    const isMultiTab = selectedTabs.length > 1;
+    console.log("Is multi-tab:", isMultiTab);
+    
+    // Get prompt from first tab
+    const firstTabResponse = await browser.tabs.sendMessage(
+      selectedTabs[0].id, 
+      { 
+        command: 'convert-to-markdown', 
+        isMultiTab,
+        isFirstTab: true 
+      }
+    );
+
+    console.log("First tab response for copy:", firstTabResponse);
+
+    if (!firstTabResponse || firstTabResponse.cancelled) {
+      console.log("Copy operation cancelled");
+      return;
+    }
+
+    // If no prompt provided, process directly without LLM
+    if (firstTabResponse.action === 'save' || !firstTabResponse.prompt?.trim()) {
+      await copyTabsDirectly(selectedTabs);
+      return;
+    }
+
+    if (firstTabResponse.action === 'batch') {
+      console.log("Processing copy as batch");
+      const batchResult = await processBatchContent(selectedTabs, firstTabResponse.prompt, apiKey);
+      if (batchResult) {
+        await copyToClipboardAndSave(selectedTabs[0], batchResult.markdown, batchResult);
+      }
+    } else if (firstTabResponse.action === 'refine') {
+      console.log("Processing copy individually with prompt");
+      let combinedMarkdown = '';
+      for (const tab of selectedTabs) {
+        const tabResponse = await browser.tabs.sendMessage(tab.id, { 
+          command: 'convert-to-markdown',
+          isFirstTab: false
+        });
+        
+        if (tabResponse && tabResponse.markdown) {
+          const refinedMarkdown = await refineMDWithLLM(
+            tabResponse.markdown,
+            firstTabResponse.prompt,
+            apiKey,
+            tab.id
+          );
+          
+          if (refinedMarkdown) {
+            combinedMarkdown += `<url>${tab.url}</url>\n<title>${tab.title}</title>\n${refinedMarkdown}\n\n`;
+          }
+        }
+      }
+      await copyToClipboardAndSave(selectedTabs[0], combinedMarkdown);
+    }
+  } catch (error) {
+    console.error("Error in copyAsMarkdown:", error);
+    throw error;
+  }
 }
 
-function proceedWithCopyAndSave(tab, markdown) {
-  const markdownText = `<url>${tab.url}</url>\n<title>${tab.title}</title>\n${markdown}`;
-  
-  // Save to collection
-  browser.storage.local.get(['markdownData'], (result) => {
-    const markdownData = result.markdownData || [];
-    const existingIndex = markdownData.findIndex(item => item.url === tab.url);
-    
-    if (existingIndex !== -1) {
-      markdownData[existingIndex] = {
-        ...markdownData[existingIndex],
-        markdown: markdown,
-        savedAt: new Date().toISOString()
-      };
-    } else {
-      markdownData.push({
-        url: tab.url,
-        title: tab.title,
-        markdown: markdown,
-        savedAt: new Date().toISOString()
+// Update copyTabsDirectly to handle notifications
+async function copyTabsDirectly(tabs) {
+  let combinedMarkdown = '';
+  let processedCount = 0;
+  for (const tab of tabs) {
+    try {
+      const response = await browser.tabs.sendMessage(tab.id, { command: 'convert-to-markdown' });
+      if (response && response.markdown) {
+        processedCount++;
+        combinedMarkdown += `<url>${tab.url}</url>\n<title>${tab.title}</title>\n${response.markdown}\n\n`;
+      }
+    } catch (error) {
+      console.error(`Error processing tab ${tab.url}:`, error);
+      await browser.tabs.sendMessage(tab.id, { 
+        command: 'show-notification', 
+        message: 'Error processing page', 
+        type: 'error' 
       });
     }
-    
-    browser.storage.local.set({ markdownData }, () => {
-      if (browser.runtime.lastError) {
-        console.error("Error saving markdownData:", browser.runtime.lastError);
-      } else {
-        console.log("Markdown data saved successfully");
-      }
+  }
+  if (processedCount > 0) {
+    await copyToClipboardAndSave(tabs[0], combinedMarkdown);
+    await browser.tabs.sendMessage(tabs[0].id, { 
+      command: 'show-notification', 
+      message: `${processedCount} page${processedCount > 1 ? 's' : ''} copied and saved` 
     });
-  });
+  }
+}
 
-  // Copy to clipboard
-  navigator.clipboard.writeText(markdownText)
-    .then(() => {
-      console.log("Markdown copied to clipboard");
-      browser.tabs.sendMessage(tab.id, { command: 'show-notification', message: 'Markdown copied to clipboard and saved' });
-    })
-    .catch(err => {
-      console.error('Failed to copy to clipboard:', err);
-      browser.tabs.sendMessage(tab.id, { command: 'show-notification', message: 'Failed to copy to clipboard, but Markdown was saved', type: 'warning' });
+async function copyToClipboardAndSave(tab, markdown, batchInfo = null) {
+  try {
+    // Copy to clipboard
+    await navigator.clipboard.writeText(markdown);
+    console.log("Markdown copied to clipboard");
+    
+    // Save to storage
+    const result = await browser.storage.local.get(['markdownData']);
+    const markdownData = result.markdownData || [];
+    
+    const newEntry = batchInfo || {
+      url: tab.url,
+      title: tab.title,
+      markdown: markdown,
+      savedAt: new Date().toISOString()
+    };
+    
+    const existingIndex = markdownData.findIndex(item => item.url === tab.url);
+    if (existingIndex !== -1) {
+      markdownData[existingIndex] = newEntry;
+    } else {
+      markdownData.push(newEntry);
+    }
+    
+    await browser.storage.local.set({ markdownData });
+    console.log("Markdown data saved successfully");
+    
+    // Show success notification
+    await browser.tabs.sendMessage(tab.id, { 
+      command: 'show-notification', 
+      message: 'Markdown copied to clipboard and saved' 
     });
+  } catch (err) {
+    console.error('Error in copyToClipboardAndSave:', err);
+    await browser.tabs.sendMessage(tab.id, { 
+      command: 'show-notification', 
+      message: 'Failed to copy to clipboard, but Markdown was saved', 
+      type: 'warning' 
+    });
+  }
 }
