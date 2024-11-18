@@ -249,10 +249,14 @@ function showPromptPopup(isMultiTab = false) {
     const cancelButton = document.getElementById('cancel-save');
 
     function acceptPrompt() {
-      const prompt = promptInput.value;
+      const prompt = promptInput.value.trim();
       document.body.removeChild(popup);
       console.log("Prompt accepted:", prompt);
-      resolve({ action: 'refine', prompt });
+      if (!prompt) {
+        resolve({ action: 'save' });
+      } else {
+        resolve({ action: 'refine', prompt });
+      }
     }
 
     function saveWithoutRefining() {
@@ -268,10 +272,14 @@ function showPromptPopup(isMultiTab = false) {
     }
 
     function processBatch() {
-      const prompt = promptInput.value;
+      const prompt = promptInput.value.trim();
       document.body.removeChild(popup);
       console.log("Processing as batch:", prompt);
-      resolve({ action: 'batch', prompt });
+      if (!prompt) {
+        resolve({ action: 'save' });
+      } else {
+        resolve({ action: 'batch', prompt });
+      }
     }
 
     acceptButton.addEventListener('click', acceptPrompt);
@@ -289,11 +297,11 @@ function showPromptPopup(isMultiTab = false) {
           return;
         }
         
-        // Regular Enter handling
-        if (promptInput.value.trim()) {
-          acceptPrompt();
-        } else {
+        // Regular Enter handling - always treat empty prompt as "save"
+        if (!promptInput.value.trim()) {
           saveWithoutRefining();
+        } else {
+          acceptPrompt();
         }
       }
     });

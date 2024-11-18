@@ -140,3 +140,30 @@ export function jsonToMarkdown(json) {
   
   return markdown.trim();
 }
+
+/**
+ * Analyzes URLs to determine if they're all subdomains of the main domain
+ * @param {Array} urls - Array of URLs to analyze
+ * @returns {Object} - Analysis result
+ */
+export function analyzeDomains(urls) {
+  const domains = urls.map(url => {
+    const hostname = new URL(url).hostname;
+    const parts = hostname.split('.');
+    const mainDomain = parts.slice(-2).join('.');
+    return {
+      full: hostname,
+      main: mainDomain
+    };
+  });
+
+  const mainDomain = domains[0].main;
+  const isAllSubdomains = domains.every(d => d.main === mainDomain);
+  const uniqueMainDomains = new Set(domains.map(d => d.main));
+
+  return {
+    isAllSubdomains,
+    count: isAllSubdomains ? domains.length : uniqueMainDomains.size,
+    type: isAllSubdomains ? 'subdomains' : 'domains'
+  };
+}

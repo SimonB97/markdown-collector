@@ -4,12 +4,20 @@ A minimalistic Firefox extension that allows you to collect URLs, convert the co
 
 ## Features
 
-- **Quick Save:** Use a keyboard shortcut to save the current page's URL and convert its content to Markdown.
-- **Markdown Collection:** Access a centralized page to view and manage all your saved URLs and their Markdown content.
-- **Editable Content:** Edit Markdown directly within the collection page. Changes are saved automatically upon editing.
-- **Copy Markdown:** Concatenate and copy all collected Markdown content to your clipboard, ready for pasting into AI chats.
-- **Bulk Actions:** Select multiple entries for copying or deleting, perfect for compiling comprehensive context for AI assistants.
-- **Content Updates:** Refresh and review changes in Markdown content from source pages, ensuring your AI always has the latest information.
+- **Quick Save:** Use keyboard shortcuts to save and convert pages:
+  - `Alt+I`: Save and convert current page(s)
+  - `Alt+C`: Save, convert, and copy to clipboard
+  - `Alt+M`: Open markdown collection
+- **AI-Powered Refinement:** Optional LLM integration to refine and structure content based on custom prompts
+- **Multi-Tab Processing:** Select multiple tabs (Ctrl+Click or Shift+Click) and process them:
+  - Individual mode: Apply the same AI refinement to each page separately
+  - Batch mode: Combine all selected pages into one document (Shift+Enter) and apply the same AI refinement to the combined content
+- **Content Management:**
+  - Centralized collection page for all saved URLs and their Markdown content
+  - Edit content directly within the collection
+  - Select multiple entries for copying or deleting
+  - Update and review changes with diff view
+- **Smart Content Cleanup:** Optional Readability integration to extract main content and remove clutter
 
 ## Installation
 
@@ -24,35 +32,53 @@ _or (for development)_
    ```
 
 2. **Load the Extension in Firefox:**
-   - Open Firefox and navigate to `about:debugging#/runtime/this-firefox`.
-   - Click on **"Load Temporary Add-on..."**.
-   - Select the `manifest.json` file from the cloned repository.
+   - Open Firefox and navigate to `about:debugging#/runtime/this-firefox`
+   - Click on **"Load Temporary Add-on..."**
+   - Select the `manifest.json` file from the cloned repository
 
 ## Usage
 
-1. **Save a Page:**
+1. **Save Pages:**
 
-   - Press the keyboard shortcut `Alt+I` to save the current page's URL and convert its content to Markdown
-   - or click the extension icon and select **"Copy as Markdown"**, which will copy the contents of the current page to your clipboard and save it to the collection.
+   - Single Page:
+     - Press `Alt+I` to save and convert the current page
+     - Press `Alt+C` to save, convert, and copy to clipboard
+   - Multiple Pages:
+     - Select multiple tabs using Ctrl+Click or Shift+Click
+     - Press `Alt+I` or `Alt+C`
+     - Choose processing mode:
+       - Press Enter: Process each page individually with the same prompt
+       - Press Shift+Enter: Combine all pages into one document
 
-2. **View and Manage Collected Markdown:**
+2. **AI Refinement (Optional):**
 
-   - Press the keyboard shortcut `Alt+M` or click the extension icon and select **"Open Collection"** to view all saved URLs and their Markdown content.
-   - In the collection page, you can:
-     - **Edit Markdown:** Click inside a Markdown box to edit its content. Changes are saved automatically.
-     - **Copy Markdown:** Select desired entries and click the **"Copy"** button to copy the concatenated Markdown to your clipboard, ready for pasting into AI chats.
-     - **Delete Entries:** Select entries and click the **"Delete"** button to remove them from your collection.
-     - **Update Markdown:** Select entries and click the **"Update"** button to refresh the Markdown content from the source page. This will show the diff of the old and new markdown content, which you can accept or reject **at the bottom of the diff popup**.
+   - Enable LLM refinement in settings
+   - Add your API key (supports OpenAI and compatible local models)
+   - When saving pages, enter a prompt to refine the content
+   - For multiple pages:
+     - Individual mode: Same prompt applies to each page
+     - Batch mode: Prompt applies to combined content
 
-3. **Copy Markdown:**
-   - After ensuring all Markdown content is fully scraped (this is generally very fast), use the **"Copy"** button to copy all Markdown data, including URLs and titles, separated by XML tags, optimized for sharing with AI assistants.
+3. **Manage Collection:**
+   - Press `Alt+M` to open the collection page
+   - Edit content directly in the markdown boxes
+   - Select entries and use the action buttons to:
+     - Copy selected entries
+     - Update content from source
+     - Delete entries
+   - Use the search feature to filter entries
 
 ## Keyboard Shortcuts
 
-- **Save Current URL and Convert to Markdown:** `Alt+I`
-- **Open Markdown Collection Page:** `Alt+M`
+- **Save and Convert:** `Alt+I`
+- **Save, Convert, and Copy:** `Alt+C`
+- **Open Collection:** `Alt+M`
+- **In Prompt Dialog:**
+  - Enter: Process individually
+  - Shift+Enter: Process as batch (when multiple tabs selected)
+  - Esc: Cancel operation
 
-_You can customize these shortcuts in the Firefox Add-ons settings._
+_Shortcuts can be customized in Firefox Add-ons settings._
 
 ## Roadmap
 

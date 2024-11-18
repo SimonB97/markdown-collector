@@ -2,7 +2,7 @@
  * Handles LLM processing for single and multiple tabs
  */
 
-import { jsonToMarkdown } from './markdownUtils.js';
+import { jsonToMarkdown, analyzeDomains } from './markdownUtils.js';
 
 /**
  * Process content with LLM refinement
@@ -48,9 +48,15 @@ export async function processBatchContent(tabs, prompt, apiKey) {
     const combinedContent = await combineTabsContent(tabs);
     const refinedContent = await refineMDWithLLM(combinedContent, prompt, apiKey, tabs[0].id);
     
+    // Analyze domains
+    const urls = tabs.map(tab => tab.url);
+    const domainAnalysis = analyzeDomains(urls);
+    
+    const titleSuffix = `(${domainAnalysis.count} ${domainAnalysis.type})`;
+    
     return {
       url: tabs[0].url,
-      title: tabs[0].title,
+      title: `${tabs[0].title} ${titleSuffix}`,
       markdown: refinedContent,
       isBatchProcessed: true,
       batchInfo: {
@@ -58,7 +64,11 @@ export async function processBatchContent(tabs, prompt, apiKey) {
         sources: tabs.map(tab => ({
           url: tab.url,
           title: tab.title
-        }))
+        })),
+        domainInfo: {
+          count: domainAnalysis.count,
+          type: domainAnalysis.type
+        }
       },
       savedAt: new Date().toISOString()
     };

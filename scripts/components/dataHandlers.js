@@ -185,25 +185,154 @@ function renderMarkdownData(markdownData, container, openUrls, query, filters) {
           titleContent.style.cursor = 'pointer';
 
           const titleText = document.createElement('span');
-          titleText.textContent = getCoreDomain(item.url);
           titleText.style.fontSize = '20px';
           titleText.style.color = 'var(--entry-title-color)';
 
-          const path = document.createElement('span');
-          path.style.color = 'gray';
-          path.style.fontSize = '20px';
-          path.textContent = ` ${new URL(item.url).pathname}`;
-          titleText.appendChild(path);
+          if (item.isBatchProcessed && item.batchInfo) {
+            const isAllSubdomains = item.batchInfo.domainInfo.type === 'subdomains';
+            const mainUrl = new URL(item.url);
+            
+            if (isAllSubdomains) {
+              // For subdomains: Show main domain as title
+              const mainDomain = mainUrl.hostname.split('.').slice(-2).join('.');
+              titleText.textContent = mainDomain;
+            } else {
+              // For multiple domains: Show "X pages"
+              titleText.textContent = `${item.batchInfo.sources.length} pages`;
+            }
+            
+            // Add batch info icon
+            const batchIcon = createBatchInfoIcon(item.batchInfo);
+            titleText.appendChild(batchIcon);
 
-          const pageTitle = document.createElement('div');
-          pageTitle.className = 'title-text';
-          pageTitle.textContent = item.title;
-          pageTitle.style.fontSize = '12px';
-          pageTitle.style.color = 'gray';
-          pageTitle.style.marginTop = '5px';
+            // Create subtitle with other domains/subdomains
+            const subtitleDomains = document.createElement('div');
+            subtitleDomains.style.fontSize = '12px';
+            subtitleDomains.style.marginTop = '3px';
+            
+            const otherSources = item.batchInfo.sources.slice(1); // Skip first source
+            const maxDisplay = 3;
+            let displayCount = 0;
+            const remainingCount = otherSources.length - maxDisplay;
+            
+            // Create colored domain/subdomain chips
+            const chipContainer = document.createElement('span');
+            chipContainer.style.display = 'inline-flex';
+            chipContainer.style.alignItems = 'center';
+            subtitleDomains.appendChild(chipContainer);
 
-          titleContent.appendChild(titleText);
-          titleContent.appendChild(pageTitle);
+            if (isAllSubdomains) {
+              // For subdomains: Show unique paths
+              const uniquePaths = new Set();
+              otherSources.forEach(source => {
+                const path = new URL(source.url).pathname.replace(/^\//, '') || 'root';
+                uniquePaths.add(path);
+              });
+              
+              const pathsArray = Array.from(uniquePaths);
+              const displayPaths = pathsArray.slice(0, maxDisplay);
+              const remainingCount = pathsArray.length - maxDisplay;
+              
+              displayPaths.forEach((path, index) => {
+                const chip = document.createElement('span');
+                chip.style.display = 'inline-block';
+                chip.style.padding = '2px 6px';
+                chip.style.borderRadius = '3px';
+                chip.style.marginRight = '4px';
+                
+                const hue = (index * 137.508) % 360;
+                chip.style.backgroundColor = `hsl(${hue}, 70%, 85%)`;
+                chip.style.color = `hsl(${hue}, 70%, 25%)`;
+                chip.textContent = path;
+                
+                chipContainer.appendChild(chip);
+              });
+              
+              if (remainingCount > 0) {
+                const moreText = document.createElement('span');
+                moreText.style.color = 'gray';
+                moreText.style.marginLeft = '2px';
+                moreText.textContent = `+${remainingCount}`;
+                chipContainer.appendChild(moreText);
+              }
+            } else {
+              // For multiple domains: Show unique main domains
+              const uniqueDomains = new Set();
+              item.batchInfo.sources.forEach(source => {
+                const domain = new URL(source.url).hostname.split('.').slice(-2).join('.');
+                uniqueDomains.add(domain);
+              });
+              
+              const domainsArray = Array.from(uniqueDomains);
+              const maxDisplay = 3;
+              const displayDomains = domainsArray.slice(0, maxDisplay);
+              
+              // Calculate remaining count from the total unique domains
+              const totalUniqueDomains = uniqueDomains.size;
+              const remainingCount = Math.max(0, totalUniqueDomains - maxDisplay);
+              
+              displayDomains.forEach((domain, index) => {
+                const chip = document.createElement('span');
+                chip.style.display = 'inline-block';
+                chip.style.padding = '2px 6px';
+                chip.style.borderRadius = '3px';
+                chip.style.marginRight = '4px';
+                
+                const hue = (index * 137.508) % 360;
+                chip.style.backgroundColor = `hsl(${hue}, 70%, 85%)`;
+                chip.style.color = `hsl(${hue}, 70%, 25%)`;
+                chip.textContent = domain;
+                
+                chipContainer.appendChild(chip);
+              });
+              
+              // Always add +X if there are remaining domains
+              if (remainingCount > 0) {
+                const moreText = document.createElement('span');
+                moreText.style.color = 'gray';
+                moreText.style.marginLeft = '2px';
+                moreText.textContent = `+${remainingCount}`;
+                chipContainer.appendChild(moreText);
+              }
+            }
+            
+            titleContent.appendChild(titleText);
+            titleContent.appendChild(subtitleDomains);
+
+            // Show truncated prompt instead of original title
+            const pageTitle = document.createElement('div');
+            pageTitle.className = 'title-text';
+            pageTitle.style.fontSize = '12px';
+            pageTitle.style.color = 'gray';
+            pageTitle.style.marginTop = '5px';
+            
+            // Truncate prompt to reasonable length (e.g., 100 characters)
+            const maxPromptLength = 100;
+            const prompt = item.batchInfo.prompt;
+            pageTitle.textContent = prompt.length > maxPromptLength 
+              ? `"${prompt.substring(0, maxPromptLength)}..."` 
+              : `"${prompt}"`;
+            pageTitle.title = prompt; // Show full prompt on hover
+            
+            titleContent.appendChild(pageTitle);
+          } else {
+            // Regular non-batch entry display (unchanged)
+            titleText.textContent = getCoreDomain(item.url);
+            const path = document.createElement('span');
+            path.style.color = 'gray';
+            path.style.fontSize = '20px';
+            path.textContent = ` ${new URL(item.url).pathname}`;
+            titleText.appendChild(path);
+            titleContent.appendChild(titleText);
+            
+            const pageTitle = document.createElement('div');
+            pageTitle.className = 'title-text';
+            pageTitle.textContent = item.title;
+            pageTitle.style.fontSize = '12px';
+            pageTitle.style.color = 'gray';
+            pageTitle.style.marginTop = '5px';
+            titleContent.appendChild(pageTitle);
+          }
 
           const rightSection = document.createElement('div');
           rightSection.style.display = 'flex';
@@ -410,4 +539,114 @@ export function searchMarkdownEntries(markdownData, query, filters) {
       const markdownMatch = filters.searchContents && item.markdown.toLowerCase().includes(lowerCaseQuery);
       return urlMatch || titleMatch || markdownMatch;
     });
+}
+
+function createBatchInfoIcon(batchInfo) {
+  const infoIcon = document.createElement('span');
+  infoIcon.className = 'batch-info-icon';
+  infoIcon.textContent = '+';
+  
+  const popup = document.createElement('div');
+  popup.className = 'batch-info-popup';
+  
+  // Add event listeners to position and show/hide popup
+  infoIcon.addEventListener('mouseenter', (e) => {
+    const rect = infoIcon.getBoundingClientRect();
+    popup.style.display = 'block';
+    popup.style.left = `${rect.left}px`;
+    popup.style.top = `${rect.bottom + 5}px`; // 5px gap below icon
+  });
+  
+  infoIcon.addEventListener('mouseleave', (e) => {
+    // Check if mouse is over popup
+    const popupRect = popup.getBoundingClientRect();
+    if (
+      e.clientX < popupRect.left ||
+      e.clientX > popupRect.right ||
+      e.clientY < popupRect.top - 5 || // Include gap in check
+      e.clientY > popupRect.bottom
+    ) {
+      popup.style.display = 'none';
+    }
+  });
+  
+  popup.addEventListener('mouseleave', () => {
+    popup.style.display = 'none';
+  });
+
+  // Add prompt information
+  const promptDiv = document.createElement('div');
+  promptDiv.className = 'prompt-text';
+  promptDiv.textContent = `Prompt: "${batchInfo.prompt}"`;
+  popup.appendChild(promptDiv);
+  
+  // Add source information
+  const sourcesTitle = document.createElement('div');
+  sourcesTitle.style.marginBottom = '4px';
+  sourcesTitle.textContent = `Combined from ${batchInfo.domainInfo.count} ${batchInfo.domainInfo.type}:`;
+  popup.appendChild(sourcesTitle);
+  
+  // Group sources by domain
+  const sourcesByDomain = {};
+  batchInfo.sources.forEach(source => {
+    const domain = new URL(source.url).hostname;
+    if (!sourcesByDomain[domain]) {
+      sourcesByDomain[domain] = [];
+    }
+    sourcesByDomain[domain].push(source);
+  });
+  
+  // Create domain groups in popup
+  Object.entries(sourcesByDomain).forEach(([domain, sources]) => {
+    const domainGroup = document.createElement('div');
+    domainGroup.className = 'domain-group';
+    domainGroup.style.marginBottom = '8px';
+    
+    const domainHeader = document.createElement('div');
+    domainHeader.style.fontWeight = 'bold';
+    domainHeader.style.marginBottom = '4px';
+    domainHeader.textContent = domain;
+    domainGroup.appendChild(domainHeader);
+    
+    sources.forEach(source => {
+      const sourceDiv = document.createElement('div');
+      sourceDiv.className = 'batch-source';
+      sourceDiv.textContent = source.title;
+      sourceDiv.title = source.url;
+      sourceDiv.style.paddingLeft = '12px';
+      sourceDiv.style.cursor = 'pointer'; // Add cursor pointer
+      
+      // Add click handler to open URL in new tab
+      sourceDiv.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent popup from closing
+        browser.tabs.create({ url: source.url });
+      });
+      
+      domainGroup.appendChild(sourceDiv);
+    });
+    
+    popup.appendChild(domainGroup);
+  });
+  
+  // Append popup to body instead of icon
+  document.body.appendChild(popup);
+  return infoIcon;
+}
+
+export function createMarkdownBox(item, container, openUrls) {
+  // ... existing code ...
+  
+  const titleSpan = document.createElement('span');
+  titleSpan.textContent = item.title;
+  titleSpan.className = 'title-text';
+  
+  // Add batch info icon if this is a batch-processed entry
+  if (item.isBatchProcessed && item.batchInfo) {
+    const batchIcon = createBatchInfoIcon(item.batchInfo);
+    titleSpan.appendChild(batchIcon);
+  }
+  
+  boxTitle.appendChild(titleSpan);
+  
+  // ... rest of the existing code ...
 }
