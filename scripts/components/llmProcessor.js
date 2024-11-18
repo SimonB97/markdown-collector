@@ -45,6 +45,12 @@ export async function refineMDWithLLM(markdown, prompt, apiKey, tabId) {
  */
 export async function processBatchContent(tabs, prompt, apiKey) {
   try {
+    // If prompt is empty, return null to trigger individual processing
+    // regardless of whether Enter or Shift+Enter was used
+    if (!prompt?.trim()) {
+      return null;
+    }
+    
     const combinedContent = await combineTabsContent(tabs);
     const refinedContent = await refineMDWithLLM(combinedContent, prompt, apiKey, tabs[0].id);
     

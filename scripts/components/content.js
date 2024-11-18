@@ -158,7 +158,7 @@ function showPromptPopup(isMultiTab = false) {
     const popup = document.createElement('div');
     popup.style.cssText = `
       position: fixed;
-      top: 30%;
+      top: 20%;
       left: 70%;
       transform: translate(-50%, -50%);
       background: var(--background-color);
@@ -264,7 +264,7 @@ function showPromptPopup(isMultiTab = false) {
     function cancelSave() {
       document.body.removeChild(popup);
       console.log("Save process cancelled");
-      resolve({ action: 'cancel' });
+      resolve({ cancelled: true });
     }
 
     function processBatch() {
@@ -305,8 +305,10 @@ function showPromptPopup(isMultiTab = false) {
       }
     });
 
-    // Focus the input field when the popup is shown
+    // Focus the input field and move cursor to end
     promptInput.focus();
+    const length = promptInput.value.length;
+    promptInput.setSelectionRange(length, length);
 
     // Add batch processing button for multi-tab
     if (isMultiTab) {

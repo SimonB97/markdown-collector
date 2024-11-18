@@ -177,33 +177,44 @@ function renderMarkdownData(markdownData, container, openUrls, query, filters) {
           pageCheckbox.className = 'page-checkbox';
           pageCheckbox.style.marginRight = '15px';
           
-          const titleContent = document.createElement('div');
-          titleContent.style.flex = '1';
-          titleContent.style.overflow = 'hidden';
-          titleContent.style.textOverflow = 'ellipsis';
-          titleContent.style.whiteSpace = 'nowrap';
-          titleContent.style.cursor = 'pointer';
+          if (item.isBatchProcessed && item.batchInfo) {
+            const titleContent = createBatchTitleContent(item.batchInfo);
+            title.appendChild(pageCheckbox);
+            title.appendChild(titleContent);
+          } else {
+            const titleContent = document.createElement('div');
+            titleContent.style.cssText = `
+              flex: 1;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              cursor: default;
+            `;
 
-          const titleText = document.createElement('span');
-          titleText.textContent = getCoreDomain(item.url);
-          titleText.style.fontSize = '20px';
-          titleText.style.color = 'var(--entry-title-color)';
+            const titleText = document.createElement('span');
+            titleText.textContent = getCoreDomain(item.url);
+            titleText.style.fontSize = '20px';
+            titleText.style.color = 'var(--entry-title-color)';
 
-          const path = document.createElement('span');
-          path.style.color = 'gray';
-          path.style.fontSize = '20px';
-          path.textContent = ` ${new URL(item.url).pathname}`;
-          titleText.appendChild(path);
+            const path = document.createElement('span');
+            path.style.color = 'gray';
+            path.style.fontSize = '20px';
+            path.textContent = ` ${new URL(item.url).pathname}`;
+            titleText.appendChild(path);
 
-          const pageTitle = document.createElement('div');
-          pageTitle.className = 'title-text';
-          pageTitle.textContent = item.title;
-          pageTitle.style.fontSize = '12px';
-          pageTitle.style.color = 'gray';
-          pageTitle.style.marginTop = '5px';
+            const pageTitle = document.createElement('div');
+            pageTitle.className = 'title-text';
+            pageTitle.textContent = item.title;
+            pageTitle.style.fontSize = '12px';
+            pageTitle.style.color = 'gray';
+            pageTitle.style.marginTop = '5px';
 
-          titleContent.appendChild(titleText);
-          titleContent.appendChild(pageTitle);
+            titleContent.appendChild(titleText);
+            titleContent.appendChild(pageTitle);
+
+            title.appendChild(pageCheckbox);
+            title.appendChild(titleContent);
+          }
 
           const rightSection = document.createElement('div');
           rightSection.style.display = 'flex';
@@ -238,8 +249,6 @@ function renderMarkdownData(markdownData, container, openUrls, query, filters) {
           rightSection.appendChild(actionButtons);
           rightSection.appendChild(dateTimeText);
 
-          title.appendChild(pageCheckbox);
-          title.appendChild(titleContent);
           title.appendChild(rightSection);
 
           // Show action buttons on hover
@@ -410,4 +419,357 @@ export function searchMarkdownEntries(markdownData, query, filters) {
       const markdownMatch = filters.searchContents && item.markdown.toLowerCase().includes(lowerCaseQuery);
       return urlMatch || titleMatch || markdownMatch;
     });
+}
+
+function createBatchTitleContent(batchInfo) {
+  const container = document.createElement('div');
+  container.style.cssText = `
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: default;
+  `;
+  
+  // Title row with chips and plus icon
+  const titleRow = document.createElement('div');
+  titleRow.style.cssText = `
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  `;
+  
+  const urlsByDomain = groupUrlsByDomain(batchInfo.sources);
+  const domains = Object.keys(urlsByDomain);
+  
+  // Create title text
+  const titleText = document.createElement('span');
+  titleText.style.cssText = `
+    font-size: 20px;
+    color: var(--entry-title-color);
+  `;
+  
+  if (domains.length === 1) {
+    titleText.textContent = domains[0];
+  } else {
+    titleText.textContent = `${batchInfo.sources.length} combined pages`;
+  }
+  
+  titleRow.appendChild(titleText);
+  
+  // Add chips inline with title
+  const chipsContainer = document.createElement('div');
+  chipsContainer.style.cssText = `
+    display: flex;
+    align-items: center;
+    margin-left: 8px;
+  `;
+  
+  if (domains.length === 1) {
+    addPathChips(chipsContainer, urlsByDomain[domains[0]]);
+  } else {
+    addDomainChips(chipsContainer, domains);
+  }
+  
+  titleRow.appendChild(chipsContainer);
+  
+  // Add plus icon at the end
+  const plusIcon = createPlusIcon(batchInfo);
+  titleRow.appendChild(plusIcon);
+  
+  container.appendChild(titleRow);
+  
+  // Add prompt on new line
+  if (batchInfo.prompt) {
+    const promptDisplay = createPromptDisplay(batchInfo.prompt);
+    promptDisplay.style.cssText = `
+      margin-top: 5px;
+      width: 100%;
+      font-size: 12px;
+      color: gray;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: block;
+    `;
+    container.appendChild(promptDisplay);
+  }
+  
+  return container;
+}
+
+function createPlusIcon(batchInfo) {
+  const plusIcon = document.createElement('div');
+  plusIcon.textContent = '+';
+  plusIcon.style.cssText = `
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background-color: rgba(66, 135, 245, 0.15);
+    color: #4287f5;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 8px;
+    margin-top: 1px;
+    cursor: pointer;
+  `;
+  
+  let popup = null;
+  let hideTimeout = null;
+  let isMouseOverIcon = false;
+  let isMouseOverPopup = false;
+  
+  function showPopup() {
+    if (!popup) {
+      popup = createHoverPopup(batchInfo);
+      const rect = plusIcon.getBoundingClientRect();
+      
+      // Create invisible "safe zone" between icon and popup
+      const safeZone = document.createElement('div');
+      safeZone.style.cssText = `
+        position: fixed;
+        top: ${rect.bottom}px;
+        left: ${rect.left - 20}px;
+        width: ${popup.offsetWidth + 40}px;
+        height: 10px;
+        background: transparent;
+        z-index: 999;
+      `;
+      document.body.appendChild(safeZone);
+      
+      popup.style.top = `${rect.bottom + 10}px`;
+      popup.style.left = `${rect.left}px`;
+      document.body.appendChild(popup);
+      
+      // Remove safe zone after popup is shown
+      setTimeout(() => safeZone.remove(), 100);
+    }
+  }
+  
+  function hidePopup() {
+    hideTimeout = setTimeout(() => {
+      if (!isMouseOverIcon && !isMouseOverPopup && popup) {
+        popup.remove();
+        popup = null;
+      }
+    }, 300); // 300ms delay before hiding
+  }
+  
+  function cancelHidePopup() {
+    if (hideTimeout) {
+      clearTimeout(hideTimeout);
+      hideTimeout = null;
+    }
+  }
+  
+  plusIcon.addEventListener('mouseenter', () => {
+    isMouseOverIcon = true;
+    cancelHidePopup();
+    showPopup();
+  });
+  
+  plusIcon.addEventListener('mouseleave', () => {
+    isMouseOverIcon = false;
+    hidePopup();
+  });
+  
+  // Update the popup event listeners
+  const originalCreateHoverPopup = createHoverPopup;
+  createHoverPopup = (batchInfo) => {
+    const popup = originalCreateHoverPopup(batchInfo);
+    
+    popup.addEventListener('mouseenter', () => {
+      isMouseOverPopup = true;
+      cancelHidePopup();
+    });
+    
+    popup.addEventListener('mouseleave', () => {
+      isMouseOverPopup = false;
+      hidePopup();
+    });
+    
+    return popup;
+  };
+  
+  return plusIcon;
+}
+
+function createHoverPopup(batchInfo) {
+  const popup = document.createElement('div');
+  popup.style.cssText = `
+    position: fixed;
+    background: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    z-index: 1000;
+    max-width: 400px;
+    font-size: 14px;
+    max-height: 80vh;
+    overflow-y: auto;
+  `;
+  
+  // Add prompt with styling
+  if (batchInfo.prompt) {
+    const promptDiv = document.createElement('div');
+    promptDiv.style.cssText = `
+      margin-bottom: 12px;
+      padding: 8px;
+      background: rgba(66, 135, 245, 0.1);
+      border-radius: 4px;
+      font-style: italic;
+      color: var(--text-color);
+    `;
+    promptDiv.textContent = `"${batchInfo.prompt}"`;
+    popup.appendChild(promptDiv);
+  }
+  
+  // Group and display URLs
+  const urlsByDomain = groupUrlsByDomain(batchInfo.sources);
+  Object.entries(urlsByDomain).forEach(([domain, urls]) => {
+    const domainDiv = document.createElement('div');
+    domainDiv.style.cssText = `
+      margin-top: 12px;
+      font-weight: bold;
+      color: var(--entry-title-color);
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border-color);
+    `;
+    domainDiv.textContent = domain;
+    popup.appendChild(domainDiv);
+    
+    urls.forEach(url => {
+      const urlDiv = createUrlEntry(url);
+      popup.appendChild(urlDiv);
+    });
+  });
+  
+  // Add event listener to keep popup open when hovering over it
+  popup.addEventListener('mouseenter', () => {
+    popup.style.display = 'block';
+  });
+  
+  popup.addEventListener('mouseleave', () => {
+    popup.remove();
+  });
+  
+  return popup;
+}
+
+function createUrlEntry(url) {
+  const div = document.createElement('div');
+  div.style.cssText = `
+    padding: 4px 8px;
+    margin: 2px 0;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  `;
+  
+  div.textContent = url.title || url.url;
+  div.title = url.url;
+  
+  div.addEventListener('mouseover', () => {
+    div.style.background = 'rgba(0,0,0,0.05)';
+  });
+  
+  div.addEventListener('mouseout', () => {
+    div.style.background = 'none';
+  });
+  
+  div.addEventListener('click', () => {
+    window.open(url.url, '_blank');
+  });
+  
+  return div;
+}
+
+function groupUrlsByDomain(urls) {
+  return urls.reduce((acc, url) => {
+    const domain = getCoreDomain(url.url);
+    if (!acc[domain]) {
+      acc[domain] = [];
+    }
+    acc[domain].push(url);
+    return acc;
+  }, {});
+}
+
+function addPathChips(container, urls) {
+  // Get full paths without the leading slash
+  const paths = urls.map(url => {
+    const pathname = new URL(url.url).pathname;
+    return pathname.startsWith('/') ? pathname.substring(1) : pathname;
+  }).filter(Boolean);
+  
+  addChips(container, paths, 'path');
+}
+
+function addDomainChips(container, domains) {
+  addChips(container, domains, 'domain');
+}
+
+function addChips(container, items, type) {
+  const maxChips = 3;
+  const colors = [
+    'rgba(255, 182, 193, 0.3)', // Light pink
+    'rgba(173, 216, 230, 0.3)', // Light blue
+    'rgba(144, 238, 144, 0.3)'  // Light green
+  ];
+  
+  const chipWrapper = document.createElement('div');
+  chipWrapper.style.cssText = `
+    display: flex;
+    align-items: center;
+  `;
+  
+  items.slice(0, maxChips).forEach((item, index) => {
+    const chip = document.createElement('span');
+    chip.style.cssText = `
+      display: inline-block;
+      padding: 2px 6px;
+      margin-right: 4px;
+      border-radius: 3px;
+      background-color: ${colors[index % colors.length]};
+      font-size: 12px;
+      white-space: nowrap;
+    `;
+    chip.textContent = item;
+    chipWrapper.appendChild(chip);
+  });
+  
+  if (items.length > maxChips) {
+    const remaining = document.createElement('span');
+    remaining.style.cssText = `
+      color: gray;
+      font-size: 12px;
+      margin-right: 8px;
+    `;
+    remaining.textContent = `+${items.length - maxChips}`;
+    chipWrapper.appendChild(remaining);
+  }
+  
+  container.appendChild(chipWrapper);
+}
+
+function createPromptDisplay(prompt) {
+  const container = document.createElement('div');
+  container.style.cssText = `
+    width: 100%;
+    font-size: 12px;
+    color: gray;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  `;
+  
+  const displayText = prompt.length > 100 ? prompt.slice(0, 97) + '...' : prompt;
+  container.textContent = `"${displayText}"`;
+  container.title = prompt;
+  
+  return container;
 }
