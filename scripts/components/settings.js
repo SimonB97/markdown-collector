@@ -134,6 +134,10 @@ document.addEventListener('DOMContentLoaded', () => {
       llmWarning.style.display = 'none';
     }
   }
+
+  browser.management.getSelf().then(extensionInfo => {
+    document.getElementById('extension-version').textContent = extensionInfo.version;
+  });
 });
 
 // Function to update the toggle's visual state

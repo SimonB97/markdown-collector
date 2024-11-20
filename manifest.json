@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Markdown Collector",
   "version": "1.3.6",
-  "description": "Collects URLs and converts page content to Markdown.",
+  "description": "Privacy-focused webpage to markdown converter. Stores all data locally, with optional AI-powered content refinement.",
   "permissions": [
     "tabs",
     "activeTab",
@@ -81,7 +81,9 @@
     "libs/Readability.js",
     "settings.html",
     "scripts/components/settings.js",
-    "scripts/components/popup.js"
+    "scripts/components/popup.js",
+    "legal/privacy-policy.html",
+    "legal/impressum.html"
   ],
   "options_ui": {
     "page": "settings.html",

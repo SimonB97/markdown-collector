@@ -1,364 +1,537 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="UTF-8">
-  <title>Settings - URL to Markdown Collector</title>
-  <style>
-    @font-face {
-      font-family: 'Atkinson Hyperlegible';
-      src: url('fonts/Atkinson-Hyperlegible-Regular-102.ttf') format('truetype');
-      font-weight: normal;
-    }
-    @font-face {
-      font-family: 'Atkinson Hyperlegible';
-      src: url('fonts/Atkinson-Hyperlegible-Bold-102.ttf') format('truetype');
-      font-weight: bold;
-    }
-    body {
-      font-family: 'Atkinson Hyperlegible', Arial, sans-serif;
-      margin: 20px;
-      background-color: var(--background-color);
-      color: var(--text-color);
-    }
-    h1 {
-      font-size: 24px;
-      margin-bottom: 20px;
-    }
-    .all-settings-container {
-      margin-top: 35px;
-    }
-    .sub-settings-container {
-      margin-top: 5px;
-      margin-bottom: 5px;
-      margin-left: 80px;
-      padding-bottom: 5px;
-    }
-    .setting {
-      display: flex;
-      align-items: center;
-      margin-top: 15px;
-      margin-left: 140px;
-      margin-right: 140px;
-      padding-bottom: 15px;
-      padding-left: 11px;
-      padding-right: 5px;
-      border-bottom: 1px solid var(--border-color);
-    }
-    .sub-settings-container .setting {
-      margin-top: 5px;
-      margin-bottom: 5px;
-      padding-bottom: 5px;
-    }
-    .setting label {
-      flex: 1;
-      font-size: 18px;
-      display: flex;
-      align-items: center;
-      position: relative;
-    }
-    .toggle-switch {
-      position: relative;
-      max-width: 53px;
-      height: 24px;
-    }
-    .toggle-switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-    .toggle-switch:hover {
-      filter: brightness(110%);
-    }
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: #b0b0b0;
-      transition: 0.1s;
-      border-radius: 24px;
-    }
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 18px;
-      width: 18px;
-      left: 3px;
-      bottom: 3px;
-      background-color: white;
-      transition: 0.4s;
-      border-radius: 50%;
-    }
-    input:checked + .slider {
-      background-color: #4CAF50;
-    }
-    input:checked + .slider:before {
-      transform: translateX(29px);
-    }
-
-    /* Light theme */
-    @media (prefers-color-scheme: light) {
-      :root {
-        --background-color: #ffffff;
-        --text-color: #000000;
-        --text-color-light: rgba(26, 26, 26, 0.612);
-        --border-color: #e0e0e0;
-        --info-icon-bg: rgba(25, 25, 25, 0.177);
-        --info-icon-color: rgba(26, 26, 26, 0.612);
+  <head>
+    <meta charset="UTF-8" />
+    <title>Settings - URL to Markdown Collector</title>
+    <style>
+      @font-face {
+        font-family: "Atkinson Hyperlegible";
+        src: url("fonts/Atkinson-Hyperlegible-Regular-102.ttf")
+          format("truetype");
+        font-weight: normal;
       }
-    }
-
-    /* Dark theme */
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --background-color: #121212;
-        --text-color: #ffffff;
-        --text-color-light: rgba(255, 255, 255, 0.708);
-        --border-color: #333333;
-        --info-icon-bg: rgba(255, 255, 255, 0.108);
-        --info-icon-color: rgba(255, 255, 255, 0.838);
+      @font-face {
+        font-family: "Atkinson Hyperlegible";
+        src: url("fonts/Atkinson-Hyperlegible-Bold-102.ttf") format("truetype");
+        font-weight: bold;
       }
-    }
-
-    .info-icon {
-      display: inline-flex;
-      justify-content: center;
-      align-items: center;
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background-color: var(--info-icon-bg);
-      color: var(--info-icon-color);
-      font-size: 14px;
-      margin-left: 14px;
-      padding-right: 0px;
-      position: relative;
-    }
-
-    #model-info {
-      width: 100px;
-      border-radius: 10px;
-      padding-left: 0;
-      padding-right: 0;
-    }
-
-    .info-popup {
-      display: none;
-      position: absolute;
-      background-color: var(--background-color);
-      border: 1px solid var(--border-color);
-      color: var(--text-color-light);
-      padding: 10px;
-      border-radius: 4px;
-      font-size: 14px;
-      max-width: 280px;
-      width: max-content;
-      z-index: 1;
-      top: 100%;
-      left: 0;
-      margin-top: 5px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
-
-    .info-icon:hover .info-popup,
-    .info-popup:hover {
-      display: block;
-    }
-
-    .info-icon::after {
-      content: '';
-      position: absolute;
-      top: 100%;
-      left: 0;
-      width: 100%;
-      height: 10px;
-    }
-
-    .toggle-switch.checked .slider {
-      background-color: #4CAF50;
-    }
-
-    .toggle-switch.checked .slider:before {
-      transform: translateX(29px);
-    }
-
-    button, input[type="text"], input[type="password"], select {
-      padding: 8px;
-      margin: 5px 3px;
-      background-color: var(--button-background);
-      color: var(--button-color);
-      border: 1px solid var(--button-border);
-      font-family: 'Atkinson Hyperlegible', Arial, sans-serif;
-      border-radius: 4px;
-    }
-
-    button:hover, select:hover {
-      background-color: var(--button-hover-background);
-    }
-
-    input[type="text"], input[type="password"] {
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    select {
-      appearance: none;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      background-image: url('data:image/svg+xml;utf8,<svg fill="%23ffffff" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
-      background-repeat: no-repeat;
-      background-position: right 8px center;
-      padding-right: 30px;
-    }
-
-    /* Light theme */
-    @media (prefers-color-scheme: light) {
-      :root {
-        --button-background: #f0f0f0;
-        --button-hover-background: #e0e0e0;
-        --button-color: #000000;
-        --button-border: #cccccc;
+      body {
+        font-family: "Atkinson Hyperlegible", Arial, sans-serif;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 20px 20px 0 20px;
+        background-color: var(--background-color);
+        color: var(--text-color);
+        box-sizing: border-box;
       }
-    }
-
-    /* Dark theme */
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --button-background: #33333388;
-        --button-hover-background: #44444485;
-        --button-color: #ffffff;
-        --button-border: #44444400;
+      h1 {
+        font-size: 24px;
+        margin-bottom: 20px;
       }
-    }
+      .all-settings-container {
+        margin-top: 35px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+      .sub-settings-container {
+        margin-top: 5px;
+        margin-bottom: 5px;
+        margin-left: 80px;
+        padding-bottom: 5px;
+      }
+      .setting {
+        display: flex;
+        align-items: center;
+        margin-top: 15px;
+        margin-left: 140px;
+        margin-right: 140px;
+        padding-bottom: 15px;
+        padding-left: 11px;
+        padding-right: 5px;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .sub-settings-container .setting {
+        margin-top: 5px;
+        margin-bottom: 5px;
+        padding-bottom: 5px;
+      }
+      .setting label {
+        flex: 1;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        position: relative;
+      }
+      .toggle-switch {
+        position: relative;
+        max-width: 53px;
+        height: 24px;
+      }
+      .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .toggle-switch:hover {
+        filter: brightness(110%);
+      }
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #b0b0b0;
+        transition: 0.1s;
+        border-radius: 24px;
+      }
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.4s;
+        border-radius: 50%;
+      }
+      input:checked + .slider {
+        background-color: #4caf50;
+      }
+      input:checked + .slider:before {
+        transform: translateX(29px);
+      }
 
-    .note {
-      background-color: #e6f3ff;
-      border-left: 4px solid #2196F3;
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 4px;
-    }
+      /* Light theme */
+      @media (prefers-color-scheme: light) {
+        :root {
+          --background-color: #ffffff;
+          --text-color: #000000;
+          --text-color-light: rgba(26, 26, 26, 0.612);
+          --border-color: #e0e0e0;
+          --info-icon-bg: rgba(25, 25, 25, 0.177);
+          --info-icon-color: rgba(26, 26, 26, 0.612);
+        }
+      }
 
-    .warning {
-      background-color: #fff3cd;
-      border: 1px solid #ffeeba;
-      color: #856404;
-      margin-left: 140px;
-      margin-right: 140px;
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 4px;
-      font-size: 14px;
-      max-width: 80%;
-      justify-content: center;
-    }
+      /* Dark theme */
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --background-color: #121212;
+          --text-color: #ffffff;
+          --text-color-light: rgba(255, 255, 255, 0.708);
+          --border-color: #333333;
+          --info-icon-bg: rgba(255, 255, 255, 0.108);
+          --info-icon-color: rgba(255, 255, 255, 0.838);
+        }
+      }
 
-    .warning-container {
-      height: 30px;
-    }
+      .info-icon {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background-color: var(--info-icon-bg);
+        color: var(--info-icon-color);
+        font-size: 14px;
+        margin-left: 14px;
+        padding-right: 0px;
+        position: relative;
+      }
 
-    /* Dark theme */
-    @media (prefers-color-scheme: dark) {
+      #model-info {
+        width: 100px;
+        border-radius: 10px;
+        padding-left: 0;
+        padding-right: 0;
+      }
+
+      .info-popup {
+        display: none;
+        position: absolute;
+        background-color: var(--background-color);
+        border: 1px solid var(--border-color);
+        color: var(--text-color-light);
+        padding: 10px;
+        border-radius: 4px;
+        font-size: 14px;
+        max-width: 280px;
+        width: max-content;
+        z-index: 1;
+        top: 100%;
+        left: 0;
+        margin-top: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+
+      .info-icon:hover .info-popup,
+      .info-popup:hover {
+        display: block;
+      }
+
+      .info-icon::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        height: 10px;
+      }
+
+      .toggle-switch.checked .slider {
+        background-color: #4caf50;
+      }
+
+      .toggle-switch.checked .slider:before {
+        transform: translateX(29px);
+      }
+
+      button,
+      input[type="text"],
+      input[type="password"],
+      select {
+        padding: 8px;
+        margin: 5px 3px;
+        background-color: var(--button-background);
+        color: var(--button-color);
+        border: 1px solid var(--button-border);
+        font-family: "Atkinson Hyperlegible", Arial, sans-serif;
+        border-radius: 4px;
+      }
+
+      button:hover,
+      select:hover {
+        background-color: var(--button-hover-background);
+      }
+
+      input[type="text"],
+      input[type="password"] {
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-image: url('data:image/svg+xml;utf8,<svg fill="%23ffffff" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+        padding-right: 30px;
+      }
+
+      /* Light theme */
+      @media (prefers-color-scheme: light) {
+        :root {
+          --button-background: #f0f0f0;
+          --button-hover-background: #e0e0e0;
+          --button-color: #000000;
+          --button-border: #cccccc;
+        }
+      }
+
+      /* Dark theme */
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --button-background: #33333388;
+          --button-hover-background: #44444485;
+          --button-color: #ffffff;
+          --button-border: #44444400;
+        }
+      }
+
       .note {
-        background-color: #1a2733;
-        border-left-color: #3a6d99;
+        background-color: #e6f3ff;
+        border-left: 4px solid #2196f3;
+        padding: 10px;
+        margin-top: 10px;
+        border-radius: 4px;
       }
 
       .warning {
-        background-color: #332b00;
-        border-color: #665500;
-        color: #ffd966;
+        background-color: #fff3cd;
+        border: 1px solid #ffeeba;
+        color: #856404;
+        margin-left: 140px;
+        margin-right: 140px;
+        padding: 10px;
+        margin-top: 10px;
+        border-radius: 4px;
+        font-size: 14px;
+        max-width: 80%;
+        justify-content: center;
       }
-    }
-  </style>
-</head>
-<body>
-  <h1><span style="color: #e6b31c;">Markdown Collector</span> Settings</h1>
 
-  <div class="warning-container">
-    <div id="llm-warning" class="warning" style="display: none;">
-      It's recommended to enable "Keep main content only" when using LLM refinement. For details, see (?).
-    </div>
-  </div>
+      .warning-container {
+        height: 30px;
+      }
 
-  <div class="all-settings-container">
-    <div class="setting">
-      <label for="cleanup-toggle">
-        Keep main content only
-        <span class="info-icon">?
-          <span class="info-popup">Uses a package called Readability (Mozilla) to extract the main content by removing navigation, ads, sidebars, and other non-essential elements. It cleans up scripts, styles, unlikely candidates, empty nodes, and elements with low content scores or high link density. This process aims to leave only the article text and relevant images. For details, see the <a href="https://github.com/mozilla/readability" target="_blank" style="color: rgb(79, 138, 255); text-decoration: none;">Readability docs</a>.</span>
-        </span>
-      </label>
-      <label class="toggle-switch">
-        <input type="checkbox" id="cleanup-toggle">
-        <span class="slider"></span>
-      </label>
-    </div>
+      /* Dark theme */
+      @media (prefers-color-scheme: dark) {
+        .note {
+          background-color: #1a2733;
+          border-left-color: #3a6d99;
+        }
 
-    <div class="setting">
-      <label for="llm-toggle">
-        Use LLM for content refinement
-        <span class="info-icon">?
-          <span class="info-popup">
-            When saving a URL, a pop-up window will appear where you can specify how the AI should refine or clean the content before saving it. For example, you can ask the AI to remove or keep only certain elements, or to add a summary or title.
-            <div class="note">
-              <strong>Note:</strong> It's recommended to enable "Keep main content only" to make content cleaner before feeding it to the AI. This helps because LLMs have limited context lengths (the default model, gpt-4o-mini, has a 128,000 token context window, which should fit most cleaned web page contents).
-            </div>
+        .warning {
+          background-color: #332b00;
+          border-color: #665500;
+          color: #ffd966;
+        }
+      }
+
+      .legal-links {
+        margin-top: 10px;
+        margin-bottom: 10px;
+      }
+      .legal-links a {
+        color: #e6b31c;
+        text-decoration: none;
+        margin: 0 5px;
+      }
+      .legal-links a:hover {
+        text-decoration: underline;
+      }
+
+      .legal-section {
+        width: 100%;
+        padding: 8px 0;
+        border-top: 1px solid var(--border-color);
+        color: var(--text-color-light);
+        font-size: 14px;
+        text-align: center;
+        margin-top: auto;
+        box-sizing: border-box;
+      }
+
+      .legal-section p {
+        margin-bottom: 10px;
+      }
+
+      .warning-icon {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background-color: rgba(255, 152, 0, 0.15);
+        border: 1px solid #ff9800;
+        color: #ff9800;
+        font-size: 14px;
+        margin-left: 8px;
+        position: relative;
+        cursor: help;
+      }
+
+      .warning-popup {
+        display: none;
+        position: absolute;
+        background-color: var(--background-color);
+        border: 1px solid #ff9800;
+        color: var(--text-color-light);
+        padding: 10px;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: normal;
+        max-width: 280px;
+        width: max-content;
+        z-index: 1;
+        top: 100%;
+        left: 0;
+        margin-top: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+
+      .warning-icon:hover .warning-popup,
+      .warning-popup:hover {
+        display: block;
+      }
+
+      /* Dark theme adjustments */
+      @media (prefers-color-scheme: dark) {
+        .warning-icon {
+          background-color: rgba(255, 152, 0, 0.15);
+          border-color: #ff9800;
+          color: #ff9800;
+        }
+
+        .warning-popup {
+          border-color: #ff9800;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1><span style="color: #e6b31c">Markdown Collector</span> Settings</h1>
+
+    <div class="all-settings-container">
+      <div class="setting">
+        <label for="cleanup-toggle">
+          Keep main content only
+          <span class="info-icon"
+            >?
+            <span class="info-popup"
+              >Uses a package called Readability (Mozilla) to extract the main
+              content by removing navigation, ads, sidebars, and other
+              non-essential elements. It cleans up scripts, styles, unlikely
+              candidates, empty nodes, and elements with low content scores or
+              high link density. This process aims to leave only the article
+              text and relevant images. For details, see the
+              <a
+                href="https://github.com/mozilla/readability"
+                target="_blank"
+                style="color: rgb(79, 138, 255); text-decoration: none"
+                >Readability docs</a
+              >.</span
+            >
           </span>
-        </span>
-      </label>
-      <label class="toggle-switch">
-        <input type="checkbox" id="llm-toggle">
-        <span class="slider"></span>
-      </label>
-    </div>
+        </label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="cleanup-toggle" />
+          <span class="slider"></span>
+        </label>
+      </div>
 
-    <div class="sub-settings-container" style="display: none;">
-      <div class="setting" id="api-key-setting">
-        <label for="api-key">OpenAI API Key
-          <span class="info-icon">?
+      <div class="setting">
+        <label for="llm-toggle">
+          Use LLM for content refinement
+          <span class="info-icon"
+            >?
             <span class="info-popup">
-              You can find your OpenAI API key <a href="https://platform.openai.com/api-keys" target="_blank" style="color: rgb(79, 138, 255); text-decoration: none;">here</a> or follow the instructions <a href="https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key" target="_blank" style="color: rgb(79, 138, 255); text-decoration: none;">here</a>.
+              When saving a URL, a pop-up window will appear where you can
+              specify how the AI should refine or clean the content before
+              saving it. For example, you can ask the AI to remove or keep only
+              certain elements, or to add a summary or title.
+              <div class="note">
+                <strong>Note:</strong> It's recommended to enable "Keep main
+                content only" to make content cleaner before feeding it to the
+                AI.
+              </div>
+            </span>
+          </span>
+          <span class="warning-icon"
+            >!
+            <span class="warning-popup">
+              Enabling this feature will send content to OpenAI's servers when
+              you choose to refine content. See our
+              <a href="legal/privacy-policy.html" target="_blank"
+                >Privacy Policy</a
+              >
+              for details.
             </span>
           </span>
         </label>
-        <div style="display: flex; align-items: center;">
-          <div style="flex-grow: 1; display: flex; align-items: center;">
-            <input type="password" id="api-key" placeholder="Enter your OpenAI API key" style="flex-grow: 1;">
+        <label class="toggle-switch">
+          <input type="checkbox" id="llm-toggle" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="sub-settings-container" style="display: none">
+        <div class="setting" id="api-key-setting">
+          <label for="api-key"
+            >OpenAI API Key
+            <span class="info-icon"
+              >?
+              <span class="info-popup">
+                You can find your OpenAI API key
+                <a
+                  href="https://platform.openai.com/api-keys"
+                  target="_blank"
+                  style="color: rgb(79, 138, 255); text-decoration: none"
+                  >here</a
+                >
+                or follow the instructions
+                <a
+                  href="https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key"
+                  target="_blank"
+                  style="color: rgb(79, 138, 255); text-decoration: none"
+                  >here</a
+                >.
+              </span>
+            </span>
+          </label>
+          <div style="display: flex; align-items: center">
+            <div style="flex-grow: 1; display: flex; align-items: center">
+              <input
+                type="password"
+                id="api-key"
+                placeholder="Enter your OpenAI API key"
+                style="flex-grow: 1"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="setting" id="model-setting">
+          <label for="model-select"
+            >AI Model
+            <span class="info-icon" id="model-info"
+              >Local Models
+              <span class="info-popup">
+                Local Large Language Models can be used too, e.g., with
+                <a
+                  href="https://lmstudio.ai/"
+                  target="_blank"
+                  style="color: rgb(79, 138, 255); text-decoration: none"
+                  >LM Studio</a
+                >
+                or
+                <a
+                  href="https://ollama.com/"
+                  target="_blank"
+                  style="color: rgb(79, 138, 255); text-decoration: none"
+                  >Ollama</a
+                >. Server endpoints need to support the OpenAI function calling
+                feature. Simply pass the server URL and model name.
+              </span>
+            </span>
+          </label>
+          <div style="display: flex; align-items: center">
+            <input
+              type="text"
+              id="custom-model"
+              placeholder="Enter custom model name"
+            />
+            <select id="model-select">
+              <option value="gpt-4o-mini">gpt-4o-mini</option>
+              <option value="gpt-4o">gpt-4o</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="setting" id="base-url-setting">
+          <label for="base-url">API Base URL</label>
+          <div style="display: flex; align-items: center">
+            <input type="text" id="base-url" placeholder="Enter API base URL" />
+            <button id="reset-base-url">Reset</button>
           </div>
         </div>
       </div>
-
-      <div class="setting" id="model-setting">
-        <label for="model-select">AI Model
-          <span class="info-icon" id="model-info">Local Models
-            <span class="info-popup">
-              Local Large Language Models can be used too, e.g., with <a href="https://lmstudio.ai/" target="_blank" style="color: rgb(79, 138, 255); text-decoration: none;">LM Studio</a> or <a href="https://ollama.com/" target="_blank" style="color: rgb(79, 138, 255); text-decoration: none;">Ollama</a>. Server endpoints need to support the OpenAI function calling feature. Simply pass the server URL and model name.
-            </span>
-          </span>
-        </label>
-        <div style="display: flex; align-items: center;">
-          <input type="text" id="custom-model" placeholder="Enter custom model name">
-          <select id="model-select">
-            <option value="gpt-4o-mini">gpt-4o-mini</option>
-            <option value="gpt-4o">gpt-4o</option>
-            <option value="custom">Custom</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="setting" id="base-url-setting">
-        <label for="base-url">API Base URL</label>
-        <div style="display: flex; align-items: center;">
-          <input type="text" id="base-url" placeholder="Enter API base URL">
-          <button id="reset-base-url">Reset</button>
-        </div>
-      </div>
     </div>
-  </div>
-  
-  <script src="scripts/components/settings.js"></script>
-</body>
+
+    <footer class="legal-section">
+      <p>This extension stores all data locally in your browser.</p>
+      <div class="legal-links">
+        <a href="legal/privacy-policy.html" target="_blank">Privacy Policy</a> |
+        <a href="legal/impressum.html" target="_blank"
+          >Impressum (Legal Notice)</a
+        >
+        <p style="font-size: 12px; margin-top: 5px">
+          Version <span id="extension-version"></span>
+        </p>
+      </div>
+    </footer>
+
+    <script src="scripts/components/settings.js"></script>
+  </body>
 </html>
