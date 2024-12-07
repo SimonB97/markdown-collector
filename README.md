@@ -1,6 +1,6 @@
 # Markdown Collector - Website to Markdown
 
-A Firefox extension that helps you save web pages as Markdown and manage them efficiently. Perfect for sharing content with AI assistants like ChatGPT.
+A **Firefox extension** that helps you save web pages as Markdown and manage them efficiently. Perfect for sharing content with AI assistants like ChatGPT.
 
 ## Features
 
