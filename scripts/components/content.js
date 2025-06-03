@@ -15,75 +15,76 @@
  * along with Markdown Collector.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 let isConverting = false;
 let isShowingPrompt = false;
 
 // Listen for messages from the background or popup scripts
 browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log("Received message in content script:", request);
-
-  if (request.command === 'convert-to-markdown' && !isConverting && !isShowingPrompt) {
+  if (
+    request.command === "convert-to-markdown" &&
+    !isConverting &&
+    !isShowingPrompt
+  ) {
     isConverting = true;
     isShowingPrompt = true;
-    
-    browser.storage.local.get(['enableCleanup', 'enableLLM']).then(async (result) => {
-      try {
-        const enableCleanup = result.enableCleanup || false;
-        const enableLLM = result.enableLLM || false;
-        
-        let markdown;
-        if (enableCleanup && typeof Readability !== 'undefined') {
-          markdown = await convertPageToMarkdownWithCleanup();
-        } else {
-          markdown = convertPageToMarkdown();
-        }
 
-        if (enableLLM) {
-          console.log("LLM refinement is enabled. Showing prompt popup.");
-          try {
-            if (request.isFirstTab) {
-              const response = await showPromptPopup(request.isMultiTab);
-              console.log("Popup response:", response);
-              sendResponse({ ...response, markdown });
-            } else {
+    browser.storage.local
+      .get(["enableCleanup", "enableLLM"])
+      .then(async (result) => {
+        try {
+          const enableCleanup = result.enableCleanup || false;
+          const enableLLM = result.enableLLM || false;
+
+          let markdown;
+          if (enableCleanup && typeof Readability !== "undefined") {
+            markdown = await convertPageToMarkdownWithCleanup();
+          } else {
+            markdown = convertPageToMarkdown();
+          }
+
+          if (enableLLM) {
+            try {
+              if (request.isFirstTab) {
+                const response = await showPromptPopup(request.isMultiTab);
+                sendResponse({ ...response, markdown });
+              } else {
+                sendResponse({ markdown });
+              }
+            } catch (error) {
+              console.error("Error showing prompt popup:", error.message);
               sendResponse({ markdown });
             }
-          } catch (error) {
-            console.error("Error showing prompt popup:", error);
+          } else {
             sendResponse({ markdown });
           }
-        } else {
-          console.log("LLM refinement is disabled. Sending markdown without prompt.");
-          sendResponse({ markdown });
+        } catch (error) {
+          console.error("Error processing content:", error.message);
+          sendResponse({ markdown: "" });
+        } finally {
+          isConverting = false;
+          isShowingPrompt = false;
         }
-      } catch (error) {
-        console.error("Error processing content:", error);
-        sendResponse({ markdown: '' });
-      } finally {
+      })
+      .catch((error) => {
+        console.error("Error accessing storage:", error.message);
+        sendResponse({ markdown: "" });
         isConverting = false;
         isShowingPrompt = false;
-      }
-    }).catch((error) => {
-      console.error("Error accessing storage:", error);
-      sendResponse({ markdown: '' });
-      isConverting = false;
-      isShowingPrompt = false;
-    });
+      });
     return true;
-  } else if (request.command === 'show-notification') {
+  } else if (request.command === "show-notification") {
     showNotification(request.message, request.type);
-  } else if (request.command === 'show-loading') {
+  } else if (request.command === "show-loading") {
     showLoadingIndicator();
-  } else if (request.command === 'hide-loading') {
+  } else if (request.command === "hide-loading") {
     hideLoadingIndicator();
   }
   return false;
 });
 
 function showLoadingIndicator() {
-  const loadingIndicator = document.createElement('div');
-  loadingIndicator.id = 'loading-indicator';
+  const loadingIndicator = document.createElement("div");
+  loadingIndicator.id = "loading-indicator";
   loadingIndicator.style.cssText = `
     position: fixed;
     top: 20px;
@@ -100,13 +101,13 @@ function showLoadingIndicator() {
 }
 
 function hideLoadingIndicator() {
-  const loadingIndicator = document.getElementById('loading-indicator');
+  const loadingIndicator = document.getElementById("loading-indicator");
   if (loadingIndicator) {
     document.body.removeChild(loadingIndicator);
   }
 }
 
-const style = document.createElement('style');
+const style = document.createElement("style");
 style.textContent = `
 @keyframes spin {
   0% { transform: rotate(0deg); }
@@ -121,7 +122,10 @@ document.head.appendChild(style);
 function convertPageToMarkdownWithCleanup() {
   return new Promise((resolve, reject) => {
     try {
-      const doc = new DOMParser().parseFromString(document.documentElement.outerHTML, 'text/html');
+      const doc = new DOMParser().parseFromString(
+        document.documentElement.outerHTML,
+        "text/html"
+      );
       const reader = new Readability(doc);
       const article = reader.parse();
       if (article && article.content) {
@@ -129,11 +133,13 @@ function convertPageToMarkdownWithCleanup() {
         const bodyMarkdown = turndownService.turndown(article.content);
         resolve(`# ${article.title}\n\n${bodyMarkdown}`);
       } else {
-        console.warn("Readability failed to parse the page. Falling back to full page conversion.");
+        console.warn(
+          "Readability failed to parse the page. Falling back to full page conversion."
+        );
         resolve(convertPageToMarkdown());
       }
     } catch (error) {
-      console.error("Error using Readability:", error);
+      console.error("Error using Readability:", error.message);
       resolve(convertPageToMarkdown());
     }
   });
@@ -144,7 +150,6 @@ function convertPageToMarkdownWithCleanup() {
  * @returns {string} - The Markdown string.
  */
 function convertPageToMarkdown() {
-  console.log("Converting page to markdown without cleanup");
   const turndownService = new TurndownService();
   const title = document.title;
   const bodyHTML = document.body.innerHTML;
@@ -154,8 +159,7 @@ function convertPageToMarkdown() {
 
 function showPromptPopup(isMultiTab = false) {
   return new Promise((resolve) => {
-    console.log("Creating prompt popup");
-    const popup = document.createElement('div');
+    const popup = document.createElement("div");
     popup.style.cssText = `
       position: fixed;
       top: 20%;
@@ -175,21 +179,49 @@ function showPromptPopup(isMultiTab = false) {
       <style>
         @font-face {
           font-family: 'Atkinson Hyperlegible';
-          src: url('${browser.runtime.getURL('fonts/Atkinson-Hyperlegible-Regular-102.ttf')}') format('truetype');
+          src: url('${browser.runtime.getURL(
+            "fonts/Atkinson-Hyperlegible-Regular-102.ttf"
+          )}') format('truetype');
           font-weight: normal;
         }
         @font-face {
           font-family: 'Atkinson Hyperlegible';
-          src: url('${browser.runtime.getURL('fonts/Atkinson-Hyperlegible-Bold-102.ttf')}') format('truetype');
+          src: url('${browser.runtime.getURL(
+            "fonts/Atkinson-Hyperlegible-Bold-102.ttf"
+          )}') format('truetype');
           font-weight: bold;
         }
         :root {
-          --background-color: ${window.matchMedia('(prefers-color-scheme: dark)').matches ? '#121212' : '#ffffff'};
-          --text-color: ${window.matchMedia('(prefers-color-scheme: dark)').matches ? '#ffffff' : '#000000'};
-          --button-background: ${window.matchMedia('(prefers-color-scheme: dark)').matches ? '#33333388' : '#f0f0f0'};
-          --button-hover-background: ${window.matchMedia('(prefers-color-scheme: dark)').matches ? '#44444485' : '#e0e0e0'};
-          --button-color: ${window.matchMedia('(prefers-color-scheme: dark)').matches ? '#ffffff' : '#000000'};
-          --button-border: ${window.matchMedia('(prefers-color-scheme: dark)').matches ? '#444444' : '#cccccc'};
+          --background-color: ${
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "#121212"
+              : "#ffffff"
+          };
+          --text-color: ${
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "#ffffff"
+              : "#000000"
+          };
+          --button-background: ${
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "#33333388"
+              : "#f0f0f0"
+          };
+          --button-hover-background: ${
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "#44444485"
+              : "#e0e0e0"
+          };
+          --button-color: ${
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "#ffffff"
+              : "#000000"
+          };
+          --button-border: ${
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "#444444"
+              : "#cccccc"
+          };
         }
         h3 {
           margin-top: 0;
@@ -243,52 +275,50 @@ function showPromptPopup(isMultiTab = false) {
     `;
     document.body.appendChild(popup);
 
-    const promptInput = document.getElementById('refinement-prompt');
-    const acceptButton = document.getElementById('accept-prompt');
-    const saveWithoutRefineButton = document.getElementById('save-without-refine');
-    const cancelButton = document.getElementById('cancel-save');
+    const promptInput = document.getElementById("refinement-prompt");
+    const acceptButton = document.getElementById("accept-prompt");
+    const saveWithoutRefineButton = document.getElementById(
+      "save-without-refine"
+    );
+    const cancelButton = document.getElementById("cancel-save");
 
     function acceptPrompt() {
       const prompt = promptInput.value;
       document.body.removeChild(popup);
-      console.log("Prompt accepted:", prompt);
-      resolve({ action: 'refine', prompt });
+      resolve({ action: "refine", prompt });
     }
 
     function saveWithoutRefining() {
       document.body.removeChild(popup);
-      console.log("Saving without refinement");
-      resolve({ action: 'save' });
+      resolve({ action: "save" });
     }
 
     function cancelSave() {
       document.body.removeChild(popup);
-      console.log("Save process cancelled");
       resolve({ cancelled: true });
     }
 
     function processBatch() {
       const prompt = promptInput.value;
       document.body.removeChild(popup);
-      console.log("Processing as batch:", prompt);
-      resolve({ action: 'batch', prompt });
+      resolve({ action: "batch", prompt });
     }
 
-    acceptButton.addEventListener('click', acceptPrompt);
-    saveWithoutRefineButton.addEventListener('click', saveWithoutRefining);
-    cancelButton.addEventListener('click', cancelSave);
+    acceptButton.addEventListener("click", acceptPrompt);
+    saveWithoutRefineButton.addEventListener("click", saveWithoutRefining);
+    cancelButton.addEventListener("click", cancelSave);
 
     // Handle keyboard events
-    promptInput.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') {
+    promptInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
         event.preventDefault();
-        
+
         // Check for Shift+Enter first
         if (event.shiftKey && isMultiTab) {
           processBatch();
           return;
         }
-        
+
         // Regular Enter handling
         if (promptInput.value.trim()) {
           acceptPrompt();
@@ -298,8 +328,8 @@ function showPromptPopup(isMultiTab = false) {
       }
     });
 
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') {
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
         event.preventDefault();
         cancelSave();
       }
@@ -312,32 +342,41 @@ function showPromptPopup(isMultiTab = false) {
 
     // Add batch processing button for multi-tab
     if (isMultiTab) {
-      const batchButton = document.createElement('button');
-      batchButton.id = 'batch-process';
-      batchButton.innerHTML = 'Process as Batch<span>(Shift+Enter)</span>';
-      document.querySelector('.button-container').appendChild(batchButton);
-      
-      batchButton.addEventListener('click', processBatch);
+      const batchButton = document.createElement("button");
+      batchButton.id = "batch-process";
+      batchButton.innerHTML = "Process as Batch<span>(Shift+Enter)</span>";
+      document.querySelector(".button-container").appendChild(batchButton);
+
+      batchButton.addEventListener("click", processBatch);
     }
   });
 }
 
-function showNotification(message, type = 'info') {
-  const notification = document.createElement('div');
+function showNotification(message, type = "info") {
+  const notification = document.createElement("div");
   notification.textContent = message;
   notification.style.cssText = `
     position: fixed;
     top: 20px;
     right: 20px;
     padding: 10px 20px;
-    background-color: ${type === 'error' ? '#ff4444' : type === 'info' ? '#27ae60' : '#e74c3c'};
+    background-color: ${
+      type === "error" ? "#ff4444" : type === "info" ? "#27ae60" : "#e74c3c"
+    };
     color: white;
     border-radius: 5px;
     z-index: 10000;
     font-family: Arial, sans-serif;
+    max-width: 400px;
+    word-wrap: break-word;
   `;
   document.body.appendChild(notification);
+
+  // Show error notifications longer
+  const timeout = type === "error" ? 5000 : 3000;
   setTimeout(() => {
-    document.body.removeChild(notification);
-  }, 3000);
+    if (notification.parentNode) {
+      document.body.removeChild(notification);
+    }
+  }, timeout);
 }
