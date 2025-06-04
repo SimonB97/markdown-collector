@@ -21,6 +21,41 @@ import { refineMDWithLLM, processBatchContent } from "./llmProcessor.js";
 // Store for pending refinement
 let pendingRefinement = null;
 
+// Tab event listeners to reset refinement state on tab switch
+browser.tabs.onActivated.addListener((activeInfo) => {
+  handleTabSwitch(activeInfo.tabId, activeInfo.windowId);
+});
+
+browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  // Reset on navigation within a tab (URL change)
+  if (changeInfo.url && pendingRefinement) {
+    handleTabSwitch(tabId, tab.windowId);
+  }
+});
+
+// Function to handle tab switching and clear refinement state if needed
+function handleTabSwitch(newTabId, windowId) {
+  if (!pendingRefinement) return;
+
+  // Check if switched to a different tab than the ones involved in refinement
+  const isOriginalTab = pendingRefinement.originTabIds?.includes(newTabId);
+  const isSameWindow = pendingRefinement.windowId === windowId;
+
+  if (!isOriginalTab || !isSameWindow) {
+    clearPendingRefinement("tab-switch");
+  }
+}
+
+// Centralized function to clear pending refinement state
+function clearPendingRefinement(reason = "manual") {
+  if (pendingRefinement) {
+    console.log(`🧹 Clearing pending refinement state (reason: ${reason})`);
+    pendingRefinement = null;
+    browser.browserAction.setBadgeText({ text: "" });
+    browser.browserAction.setBadgeBackgroundColor({ color: "#000000" });
+  }
+}
+
 browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log("Received message:", request);
 
@@ -33,6 +68,8 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
       title: request.title,
       timestamp: Date.now(),
       tabCount: request.tabCount || 1,
+      originTabIds: [sender.tab?.id].filter(Boolean), // Store the originating tab ID
+      windowId: sender.tab?.windowId, // Store the window ID
     };
     console.log("Stored pending refinement:", pendingRefinement);
     // Badge will be set later when we know the actual tab count
@@ -44,8 +81,7 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
     );
     sendResponse({ pendingRefinement });
   } else if (request.command === "clear-pending-refinement") {
-    pendingRefinement = null;
-    browser.browserAction.setBadgeText({ text: "" });
+    clearPendingRefinement("user-cancel");
     sendResponse({ status: "cleared" });
   } else if (request.command === "process-refinement") {
     // Handle refinement processing from popup
@@ -176,6 +212,8 @@ async function saveCurrentTabUrl() {
         pendingRefinement.isMultiTab = isMultiTab;
         pendingRefinement.allTabs = selectedTabs; // Add all tabs for multi-tab processing
         pendingRefinement.copyAfterRefinement = true; // This is a copy operation
+        pendingRefinement.originTabIds = selectedTabs.map((tab) => tab.id); // Store all tab IDs
+        pendingRefinement.windowId = selectedTabs[0]?.windowId; // Store window ID
 
         const badgeText = selectedTabs.length.toString();
         browser.browserAction.setBadgeText({ text: badgeText });
@@ -226,6 +264,8 @@ async function saveCurrentTabUrl() {
         // Update badge with correct tab count for save operation
         if (pendingRefinement) {
           pendingRefinement.tabCount = selectedTabs.length;
+          pendingRefinement.originTabIds = selectedTabs.map((tab) => tab.id); // Store all tab IDs
+          pendingRefinement.windowId = selectedTabs[0]?.windowId; // Store window ID
           const badgeText = selectedTabs.length.toString();
           browser.browserAction.setBadgeText({ text: badgeText });
           browser.browserAction.setBadgeBackgroundColor({ color: "#FF6B35" });
@@ -693,6 +733,8 @@ async function copyAsMarkdown() {
         pendingRefinement.isMultiTab = isMultiTab;
         pendingRefinement.allTabs = selectedTabs; // Add all tabs for multi-tab processing
         pendingRefinement.copyAfterRefinement = true; // This is a copy operation
+        pendingRefinement.originTabIds = selectedTabs.map((tab) => tab.id); // Store all tab IDs
+        pendingRefinement.windowId = selectedTabs[0]?.windowId; // Store window ID
 
         const badgeText = selectedTabs.length.toString();
         browser.browserAction.setBadgeText({ text: badgeText });
@@ -876,8 +918,7 @@ async function processRefinementFromPopup(prompt, sendResponse) {
       const allTabUrls = pendingRefinement.allTabs.map((tab) => tab.url);
 
       // Clear pending refinement and badge
-      pendingRefinement = null;
-      browser.browserAction.setBadgeText({ text: "" });
+      clearPendingRefinement("refinement-complete");
 
       if (shouldCopy) {
         // For multi-tab copy, combine all refined content
@@ -939,8 +980,7 @@ async function processRefinementFromPopup(prompt, sendResponse) {
         const shouldCopy = pendingRefinement.copyAfterRefinement;
 
         // Clear pending refinement and badge
-        pendingRefinement = null;
-        browser.browserAction.setBadgeText({ text: "" });
+        clearPendingRefinement("refinement-complete");
 
         // If this was a copy operation, copy to clipboard
         if (shouldCopy) {
@@ -1039,8 +1079,7 @@ async function saveWithoutRefinement(sendResponse) {
       const shouldCopy = pendingRefinement.copyAfterRefinement;
 
       // Clear pending refinement and badge
-      pendingRefinement = null;
-      browser.browserAction.setBadgeText({ text: "" });
+      clearPendingRefinement("save-complete");
 
       // If this was a copy operation, copy combined content to clipboard
       if (shouldCopy) {
@@ -1087,8 +1126,7 @@ async function saveWithoutRefinement(sendResponse) {
       const savedMarkdown = pendingRefinement.markdown;
 
       // Clear pending refinement and badge
-      pendingRefinement = null;
-      browser.browserAction.setBadgeText({ text: "" });
+      clearPendingRefinement("save-complete");
 
       // If this was a copy operation, copy to clipboard
       if (shouldCopy) {
