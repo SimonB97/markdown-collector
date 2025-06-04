@@ -481,6 +481,14 @@ body {
   font-family: system-ui, -apple-system, sans-serif !important;
 }
 
+.checkbox-wrapper {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+
 .refinement-checkbox {
   appearance: none !important;
   width: 18px !important;
@@ -489,8 +497,8 @@ body {
   border-radius: 3px !important;
   background-color: var(--popup-surface-secondary) !important;
   cursor: pointer !important;
-  position: relative !important;
   transition: none !important;
+  margin: 0 !important;
 }
 
 .refinement-checkbox:checked {
@@ -500,9 +508,11 @@ body {
 
 .checkmark {
   position: absolute !important;
-  left: 3px !important;
-  top: 3px !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
   display: none !important;
+  pointer-events: none !important;
 }
 
 .refinement-checkbox:checked + .checkmark {

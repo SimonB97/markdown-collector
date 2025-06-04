@@ -53,35 +53,43 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Focus the textarea
     setTimeout(() => promptTextarea.focus(), 100);
 
-    // Button state management functions
+    // Button state management functions with safe DOM manipulation
+    function setButtonContent(button, text, iconSvg) {
+      // Clear existing content
+      while (button.firstChild) {
+        button.removeChild(button.firstChild);
+      }
+
+      // Create icon span
+      const iconSpan = document.createElement("span");
+      iconSpan.className = "button-icon";
+      iconSpan.innerHTML = iconSvg; // Safe - iconSvg is static SVG content
+
+      // Create text span
+      const textSpan = document.createElement("span");
+      textSpan.className = "button-text";
+      textSpan.textContent = text; // Safe - no HTML parsing
+
+      button.appendChild(iconSpan);
+      button.appendChild(textSpan);
+    }
+
     function setButtonLoadingState(button, text, icon) {
       button.disabled = true;
-      button.innerHTML = `
-        <span class="button-icon">${icon}</span>
-        <span class="button-text">${text}</span>
-      `;
+      setButtonContent(button, text, icon);
     }
 
     function setButtonSuccessState(button, text, icon) {
-      button.innerHTML = `
-        <span class="button-icon">${icon}</span>
-        <span class="button-text">${text}</span>
-      `;
+      setButtonContent(button, text, icon);
     }
 
     function setButtonErrorState(button, text, icon) {
-      button.innerHTML = `
-        <span class="button-icon">${icon}</span>
-        <span class="button-text">${text}</span>
-      `;
+      setButtonContent(button, text, icon);
     }
 
     function resetButtonState(button, text, icon) {
       button.disabled = false;
-      button.innerHTML = `
-        <span class="button-icon">${icon}</span>
-        <span class="button-text">${text}</span>
-      `;
+      setButtonContent(button, text, icon);
     }
 
     // Handle refinement
@@ -245,30 +253,31 @@ document.addEventListener("DOMContentLoaded", async () => {
       refinementTitle.textContent = `Refine ${tabCount} Tabs`;
     }
 
-    // Update button texts for multi-tab
-    refineButton.innerHTML = `
-      <span class="button-icon">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
-          <path d="M20 3v4"/>
-          <path d="M22 5h-4"/>
-          <path d="M4 17v2"/>
-          <path d="M5 18H3"/>
-        </svg>
-      </span>
-      <span class="button-text">Refine ${tabCount} Tabs</span>
+    // Update button texts for multi-tab with safe DOM manipulation
+    const refineIconSvg = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
+        <path d="M20 3v4"/>
+        <path d="M22 5h-4"/>
+        <path d="M4 17v2"/>
+        <path d="M5 18H3"/>
+      </svg>
     `;
 
-    saveWithoutRefineButton.innerHTML = `
-      <span class="button-icon">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
-          <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/>
-          <path d="M7 3v4a1 1 0 0 0 1 1h4"/>
-        </svg>
-      </span>
-      <span class="button-text">Save ${tabCount} Tabs</span>
+    const saveIconSvg = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
+        <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/>
+        <path d="M7 3v4a1 1 0 0 0 1 1h4"/>
+      </svg>
     `;
+
+    setButtonContent(refineButton, `Refine ${tabCount} Tabs`, refineIconSvg);
+    setButtonContent(
+      saveWithoutRefineButton,
+      `Save ${tabCount} Tabs`,
+      saveIconSvg
+    );
 
     // Show collective refinement checkbox for multi-tab
     const checkboxContainer = document.querySelector(".checkbox-container");
@@ -283,35 +292,48 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Focus the textarea
     setTimeout(() => promptTextarea.focus(), 100);
 
-    // Button state management functions
+    // Safe button content helper function
+    function setButtonContent(button, text, iconContent) {
+      // Clear existing content
+      while (button.firstChild) {
+        button.removeChild(button.firstChild);
+      }
+
+      // Create icon span
+      const iconSpan = document.createElement("span");
+      iconSpan.className = "button-icon";
+      if (typeof iconContent === "string" && iconContent.includes("<svg")) {
+        iconSpan.innerHTML = iconContent; // Safe - static SVG content
+      } else {
+        iconSpan.textContent = iconContent; // Safe - text content only
+      }
+
+      // Create text span
+      const textSpan = document.createElement("span");
+      textSpan.className = "button-text";
+      textSpan.textContent = text; // Safe - no HTML parsing
+
+      button.appendChild(iconSpan);
+      button.appendChild(textSpan);
+    }
+
+    // Button state management functions with safe DOM manipulation
     function setButtonLoadingState(button, text, icon) {
       button.disabled = true;
-      button.innerHTML = `
-        <span class="button-icon">${icon}</span>
-        <span class="button-text">${text}</span>
-      `;
+      setButtonContent(button, text, icon);
     }
 
     function setButtonSuccessState(button, text, icon) {
-      button.innerHTML = `
-        <span class="button-icon">${icon}</span>
-        <span class="button-text">${text}</span>
-      `;
+      setButtonContent(button, text, icon);
     }
 
     function setButtonErrorState(button, text, icon) {
-      button.innerHTML = `
-        <span class="button-icon">${icon}</span>
-        <span class="button-text">${text}</span>
-      `;
+      setButtonContent(button, text, icon);
     }
 
     function resetButtonState(button, text, icon) {
       button.disabled = false;
-      button.innerHTML = `
-        <span class="button-icon">${icon}</span>
-        <span class="button-text">${text}</span>
-      `;
+      setButtonContent(button, text, icon);
     }
 
     // Set up event handlers for multi-tab interface
@@ -500,30 +522,61 @@ document.addEventListener("DOMContentLoaded", async () => {
   console.log("No pending refinement, showing normal interface");
   showNormalInterface();
 
-  // Initialize button labels with new structure
+  // Safe function to set button content
+  function setActionButtonContent(button, iconSvg, text, hint) {
+    // Clear existing content
+    while (button.firstChild) {
+      button.removeChild(button.firstChild);
+    }
+
+    // Create icon span
+    const iconSpan = document.createElement("span");
+    iconSpan.className = "action-icon";
+    iconSpan.innerHTML = iconSvg; // Safe - static SVG content
+
+    // Create text span
+    const textSpan = document.createElement("span");
+    textSpan.className = "action-text";
+    textSpan.textContent = text; // Safe - no HTML parsing
+
+    // Create hint span
+    const hintSpan = document.createElement("span");
+    hintSpan.className = "action-hint";
+    hintSpan.textContent = hint; // Safe - no HTML parsing
+
+    button.appendChild(iconSpan);
+    button.appendChild(textSpan);
+    button.appendChild(hintSpan);
+  }
+
+  // Initialize button labels with safe DOM manipulation
   if (openMarkdownButton) {
-    openMarkdownButton.innerHTML = `
-      <span class="action-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="m6 14 1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"/>
-        </svg>
-      </span>
-      <span class="action-text">Open Collection</span>
-      <span class="action-hint">Alt+M</span>
+    const openIconSvg = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m6 14 1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"/>
+      </svg>
     `;
+    setActionButtonContent(
+      openMarkdownButton,
+      openIconSvg,
+      "Open Collection",
+      "Alt+M"
+    );
   }
 
   if (copyMarkdownButton) {
-    copyMarkdownButton.innerHTML = `
-      <span class="action-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
-          <path d="m16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
-        </svg>
-      </span>
-      <span class="action-text">Copy as Markdown</span>
-      <span class="action-hint">Alt+C</span>
+    const copyIconSvg = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
+        <path d="m16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+      </svg>
     `;
+    setActionButtonContent(
+      copyMarkdownButton,
+      copyIconSvg,
+      "Copy as Markdown",
+      "Alt+C"
+    );
   }
 
   openMarkdownButton.addEventListener("click", () => {
@@ -536,13 +589,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   copyMarkdownButton.addEventListener("click", async () => {
+    const copyIconSvg = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
+        <path d="m16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+      </svg>
+    `;
+
     try {
       // Set loading state
-      copyMarkdownButton.innerHTML = `
-        <span class="action-icon">⏳</span>
-        <span class="action-text">Processing...</span>
-        <span class="action-hint">Alt+C</span>
-      `;
+      setActionButtonContent(
+        copyMarkdownButton,
+        "⏳",
+        "Processing...",
+        "Alt+C"
+      );
       copyMarkdownButton.disabled = true;
 
       // Use the correct copy-as-markdown command
@@ -552,23 +613,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (response && response.status === "success") {
         // Content was copied successfully
-        copyMarkdownButton.innerHTML = `
-          <span class="action-icon">✅</span>
-          <span class="action-text">Copied!</span>
-          <span class="action-hint">Alt+C</span>
-        `;
+        setActionButtonContent(copyMarkdownButton, "✅", "Copied!", "Alt+C");
         showMessage("Content copied to clipboard!", "success");
         setTimeout(() => {
-          copyMarkdownButton.innerHTML = `
-            <span class="action-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
-          <path d="m16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
-        </svg>
-      </span>
-            <span class="action-text">Copy as Markdown</span>
-            <span class="action-hint">Alt+C</span>
-          `;
+          setActionButtonContent(
+            copyMarkdownButton,
+            copyIconSvg,
+            "Copy as Markdown",
+            "Alt+C"
+          );
           copyMarkdownButton.disabled = false;
         }, 1500);
       } else if (response && response.status === "pending-refinement") {
@@ -585,45 +638,29 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       } else {
         // Handle error
-        copyMarkdownButton.innerHTML = `
-          <span class="action-icon">❌</span>
-          <span class="action-text">Failed</span>
-          <span class="action-hint">Alt+C</span>
-        `;
+        setActionButtonContent(copyMarkdownButton, "❌", "Failed", "Alt+C");
         showMessage(response?.message || "Failed to process content", "error");
         setTimeout(() => {
-          copyMarkdownButton.innerHTML = `
-            <span class="action-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
-          <path d="m16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
-        </svg>
-      </span>
-            <span class="action-text">Copy as Markdown</span>
-            <span class="action-hint">Alt+C</span>
-          `;
+          setActionButtonContent(
+            copyMarkdownButton,
+            copyIconSvg,
+            "Copy as Markdown",
+            "Alt+C"
+          );
           copyMarkdownButton.disabled = false;
         }, 2000);
       }
     } catch (error) {
       console.error("Error in copy markdown:", error);
-      copyMarkdownButton.innerHTML = `
-        <span class="action-icon">❌</span>
-        <span class="action-text">Error</span>
-        <span class="action-hint">Alt+C</span>
-      `;
+      setActionButtonContent(copyMarkdownButton, "❌", "Error", "Alt+C");
       showMessage("Error processing content", "error");
       setTimeout(() => {
-        copyMarkdownButton.innerHTML = `
-          <span class="action-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
-          <path d="m16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
-        </svg>
-      </span>
-          <span class="action-text">Copy as Markdown</span>
-          <span class="action-hint">Alt+C</span>
-        `;
+        setActionButtonContent(
+          copyMarkdownButton,
+          copyIconSvg,
+          "Copy as Markdown",
+          "Alt+C"
+        );
         copyMarkdownButton.disabled = false;
       }, 2000);
     }
