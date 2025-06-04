@@ -13,6 +13,8 @@ zip -r "$ZIP_FILE" \
     manifest.json \
     icons \
     fonts \
+    styles \
+    legal \
     *.html \
     LICENSE \
     scripts \
