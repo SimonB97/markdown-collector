@@ -77,15 +77,26 @@ export function showDiffModal(url, oldMarkdown, newMarkdown, callback) {
     });
 
     const contentDiv = document.createElement("div");
-    // Safe content setting - check if content contains HTML
+    // Safe content setting with proper sanitization
     if (
       typeof content === "string" &&
       content.includes("<") &&
       content.includes(">")
     ) {
-      // For trusted HTML content, we can use innerHTML with caution
-      // This is typically used for info boxes with safe, static content
-      contentDiv.innerHTML = content;
+      // Use DOMParser for safe HTML parsing instead of innerHTML
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(content, "text/html");
+
+      // Only append if parsing was successful and no errors
+      const parsedBody = doc.body;
+      if (parsedBody && !doc.querySelector("parsererror")) {
+        while (parsedBody.firstChild) {
+          contentDiv.appendChild(parsedBody.firstChild);
+        }
+      } else {
+        // Fallback to text content if parsing fails
+        contentDiv.textContent = content;
+      }
     } else {
       // For plain text content, use textContent for safety
       contentDiv.textContent = content;

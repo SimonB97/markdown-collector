@@ -63,7 +63,20 @@ document.addEventListener("DOMContentLoaded", async () => {
       // Create icon span
       const iconSpan = document.createElement("span");
       iconSpan.className = "button-icon";
-      iconSpan.innerHTML = iconSvg; // Safe - iconSvg is static SVG content
+
+      // Safe SVG insertion using DOMParser
+      if (typeof iconSvg === "string" && iconSvg.trim().startsWith("<svg")) {
+        const parser = new DOMParser();
+        const svgDoc = parser.parseFromString(iconSvg, "image/svg+xml");
+        const svgElement = svgDoc.documentElement;
+        if (svgElement && svgElement.nodeName === "svg") {
+          iconSpan.appendChild(svgElement);
+        } else {
+          iconSpan.textContent = iconSvg; // Fallback to text
+        }
+      } else {
+        iconSpan.textContent = iconSvg; // Safe - text content only
+      }
 
       // Create text span
       const textSpan = document.createElement("span");
@@ -302,8 +315,20 @@ document.addEventListener("DOMContentLoaded", async () => {
       // Create icon span
       const iconSpan = document.createElement("span");
       iconSpan.className = "button-icon";
-      if (typeof iconContent === "string" && iconContent.includes("<svg")) {
-        iconSpan.innerHTML = iconContent; // Safe - static SVG content
+
+      // Safe SVG insertion using DOMParser
+      if (
+        typeof iconContent === "string" &&
+        iconContent.trim().startsWith("<svg")
+      ) {
+        const parser = new DOMParser();
+        const svgDoc = parser.parseFromString(iconContent, "image/svg+xml");
+        const svgElement = svgDoc.documentElement;
+        if (svgElement && svgElement.nodeName === "svg") {
+          iconSpan.appendChild(svgElement);
+        } else {
+          iconSpan.textContent = iconContent; // Fallback to text
+        }
       } else {
         iconSpan.textContent = iconContent; // Safe - text content only
       }
@@ -532,7 +557,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Create icon span
     const iconSpan = document.createElement("span");
     iconSpan.className = "action-icon";
-    iconSpan.innerHTML = iconSvg; // Safe - static SVG content
+
+    // Safe SVG insertion using DOMParser
+    if (typeof iconSvg === "string" && iconSvg.trim().startsWith("<svg")) {
+      const parser = new DOMParser();
+      const svgDoc = parser.parseFromString(iconSvg, "image/svg+xml");
+      const svgElement = svgDoc.documentElement;
+      if (svgElement && svgElement.nodeName === "svg") {
+        iconSpan.appendChild(svgElement);
+      } else {
+        iconSpan.textContent = iconSvg; // Fallback to text
+      }
+    } else {
+      iconSpan.textContent = iconSvg; // Safe - text content only
+    }
 
     // Create text span
     const textSpan = document.createElement("span");
