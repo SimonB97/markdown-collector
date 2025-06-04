@@ -20,16 +20,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   const copyMarkdownButton = document.getElementById("copy-markdown");
   const openSettingsButton = document.getElementById("open-settings");
   const statusMessage = document.getElementById("status-message");
+  const infoButton = document.querySelector(
+    '.utility-action[title="How to use"]'
+  );
+  const infoPanel = document.querySelector(".panel");
 
   // Define interface functions first
   function showNormalInterface() {
     document.getElementById("normal-interface").style.display = "block";
-    document.getElementById("refinement-interface").style.display = "none";
+    document.getElementById("refinement-interface").classList.add("hidden");
   }
 
   function showRefinementInterface(pendingContent) {
     document.getElementById("normal-interface").style.display = "none";
-    document.getElementById("refinement-interface").style.display = "block";
+    document.getElementById("refinement-interface").classList.remove("hidden");
 
     // Set up refinement interface handlers
     const promptTextarea = document.getElementById("refinement-prompt");
@@ -210,7 +214,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.log("Showing multi-tab refinement interface:", pendingContent);
 
     document.getElementById("normal-interface").style.display = "none";
-    document.getElementById("refinement-interface").style.display = "block";
+    document.getElementById("refinement-interface").classList.remove("hidden");
 
     // Set up refinement interface handlers
     const promptTextarea = document.getElementById("refinement-prompt");
@@ -458,17 +462,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   console.log("No pending refinement, showing normal interface");
   showNormalInterface();
 
-  // Update initial button labels for normal interface
-  openMarkdownButton.innerHTML = `
-    <span style="font-size: 2em;">&#8599;</span><br>
-    Open Collection
-    <span class="shortcut-hint">Alt+M</span>
-  `;
-  copyMarkdownButton.innerHTML = `
-    <span style="font-size: 2em;">&#128203;</span><br>
-    Copy as Markdown
-    <span class="shortcut-hint">Alt+C</span>
-  `;
+  // Initialize button labels with new structure
+  if (openMarkdownButton) {
+    openMarkdownButton.innerHTML = `
+      <span class="action-icon">📁</span>
+      <span class="action-text">Open Collection</span>
+      <span class="action-hint">Alt+M</span>
+    `;
+  }
+
+  if (copyMarkdownButton) {
+    copyMarkdownButton.innerHTML = `
+      <span class="action-icon">📋</span>
+      <span class="action-text">Copy as Markdown</span>
+      <span class="action-hint">Alt+C</span>
+    `;
+  }
 
   openMarkdownButton.addEventListener("click", () => {
     browser.runtime.sendMessage(
@@ -483,9 +492,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
       // Set loading state
       copyMarkdownButton.innerHTML = `
-        <span style="font-size: 2em;">⏳</span><br>
-        Processing...
-        <span class="shortcut-hint">Alt+C</span>
+        <span class="action-icon">⏳</span>
+        <span class="action-text">Processing...</span>
+        <span class="action-hint">Alt+C</span>
       `;
       copyMarkdownButton.disabled = true;
 
@@ -497,19 +506,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (response && response.status === "success") {
         // Content was copied successfully
         copyMarkdownButton.innerHTML = `
-          <span style="font-size: 2em;">✅</span><br>
-          Copied!
-          <span class="shortcut-hint">Alt+C</span>
+          <span class="action-icon">✅</span>
+          <span class="action-text">Copied!</span>
+          <span class="action-hint">Alt+C</span>
         `;
         showMessage("Content copied to clipboard!", "success");
         setTimeout(() => {
           copyMarkdownButton.innerHTML = `
-            <span style="font-size: 2em;">📋</span><br>
-            Copy as Markdown
-            <span class="shortcut-hint">Alt+C</span>
+            <span class="action-icon">📋</span>
+            <span class="action-text">Copy as Markdown</span>
+            <span class="action-hint">Alt+C</span>
           `;
           copyMarkdownButton.disabled = false;
-        }, 2000);
+        }, 1500);
       } else if (response && response.status === "pending-refinement") {
         // Content is ready for refinement - switch to refinement interface
         showMessage("Content ready for refinement!", "success");
@@ -525,16 +534,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       } else {
         // Handle error
         copyMarkdownButton.innerHTML = `
-          <span style="font-size: 2em;">❌</span><br>
-          Failed
-          <span class="shortcut-hint">Alt+C</span>
+          <span class="action-icon">❌</span>
+          <span class="action-text">Failed</span>
+          <span class="action-hint">Alt+C</span>
         `;
         showMessage(response?.message || "Failed to process content", "error");
         setTimeout(() => {
           copyMarkdownButton.innerHTML = `
-            <span style="font-size: 2em;">📋</span><br>
-            Copy as Markdown
-            <span class="shortcut-hint">Alt+C</span>
+            <span class="action-icon">📋</span>
+            <span class="action-text">Copy as Markdown</span>
+            <span class="action-hint">Alt+C</span>
           `;
           copyMarkdownButton.disabled = false;
         }, 2000);
@@ -542,16 +551,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch (error) {
       console.error("Error in copy markdown:", error);
       copyMarkdownButton.innerHTML = `
-        <span style="font-size: 2em;">❌</span><br>
-        Error
-        <span class="shortcut-hint">Alt+C</span>
+        <span class="action-icon">❌</span>
+        <span class="action-text">Error</span>
+        <span class="action-hint">Alt+C</span>
       `;
       showMessage("Error processing content", "error");
       setTimeout(() => {
         copyMarkdownButton.innerHTML = `
-          <span style="font-size: 2em;">📋</span><br>
-          Copy as Markdown
-          <span class="shortcut-hint">Alt+C</span>
+          <span class="action-icon">📋</span>
+          <span class="action-text">Copy as Markdown</span>
+          <span class="action-hint">Alt+C</span>
         `;
         copyMarkdownButton.disabled = false;
       }, 2000);
@@ -564,17 +573,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function showMessage(message, type = "info") {
     statusMessage.textContent = message;
-    statusMessage.style.color =
-      type === "error"
-        ? "#ff4444"
-        : type === "warning"
-        ? "#ffaa00"
-        : type === "success"
-        ? "#44ff44"
-        : "#ffffff";
+    statusMessage.className = `status-message ${type}`;
     statusMessage.style.display = "block";
     setTimeout(() => {
       statusMessage.style.display = "none";
-    }, 3000); // Hide the message after 3 seconds
+      statusMessage.className = "status-message";
+    }, 3000);
+  }
+
+  // Add info panel toggle functionality
+  if (infoButton && infoPanel) {
+    infoButton.addEventListener("click", () => {
+      infoPanel.classList.toggle("hidden");
+    });
   }
 });
