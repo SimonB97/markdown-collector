@@ -143,20 +143,143 @@
       text-align: center;
       margin-top: 10px;
     }
+
+    /* Refinement interface specific styles */
+    .refinement-button {
+      background-color: var(--button-background);
+      color: var(--text-color);
+      border: 1px solid var(--button-border);
+      border-radius: 5px;
+      padding: 8px 12px;
+      font-family: 'Atkinson Hyperlegible', Arial, sans-serif;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin: 2px 0;
+    }
+
+    .refinement-button:hover {
+      background-color: var(--button-hover-background);
+      transform: translateY(-1px);
+    }
+
+    .refinement-button:active {
+      transform: translateY(0);
+    }
+
+    .refinement-button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+      background-color: var(--button-background);
+    }
+
+    /* Success state styling */
+    .refinement-button .button-icon:contains("✅") {
+      color: #28a745;
+    }
+
+    /* Error state styling */
+    .refinement-button .button-icon:contains("❌") {
+      color: #dc3545;
+    }
+
+    /* Loading state styling */
+    .refinement-button .button-icon:contains("⏳") {
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+
+    .cancel-button {
+      background-color: transparent;
+      color: var(--text-color);
+      border: 1px solid var(--button-border);
+    }
+
+    .cancel-button:hover {
+      background-color: var(--button-background);
+      color: var(--text-color);
+    }
+
+    #refinement-prompt:focus {
+      border-color: var(--button-border);
+      outline: none;
+    }
+
+    .shortcut-hint {
+      font-size: 11px;
+      opacity: 0.7;
+      margin-top: 3px;
+    }
   </style>
 </head>
 <body>
-  <div class="button-container">
-    <button id="open-markdown">
-      <span class="button-icon">&#8599;</span>
-      <span class="button-text">Open Collection</span>
-      <span class="shortcut-hint">Alt + M</span>
-    </button>
-    <button id="copy-markdown">
-      <span class="button-icon">&#128203;</span>
-      <span class="button-text">Copy as Markdown</span>
-      <span class="shortcut-hint">Alt + C</span>
-    </button>
+  <!-- Normal interface -->
+  <div id="normal-interface">
+    <div class="button-container">
+      <button id="open-markdown">
+        <span class="button-icon">&#8599;</span>
+        <span class="button-text">Open Collection</span>
+        <span class="shortcut-hint">Alt + M</span>
+      </button>
+      <button id="copy-markdown">
+        <span class="button-icon">&#128203;</span>
+        <span class="button-text">Copy as Markdown</span>
+        <span class="shortcut-hint">Alt + C</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Refinement interface (hidden by default) -->
+  <div id="refinement-interface" style="display: none;">
+    <div class="button-container" style="flex-direction: column; gap: 10px; padding: 10px;">
+      <div style="text-align: center; margin-bottom: 5px;">
+        <h3 style="margin: 0; color: var(--text-color); font-size: 14px; font-weight: normal;">Refine Content</h3>
+      </div>
+      
+      <textarea id="refinement-prompt" placeholder="Enter refinement prompt (e.g., 'summarize', 'make concise')" style="
+        width: calc(100% - 16px);
+        height: 60px;
+        padding: 8px;
+        margin-bottom: 8px;
+        background-color: var(--button-background);
+        color: var(--text-color);
+        border: 1px solid var(--button-border);
+        border-radius: 5px;
+        font-family: 'Atkinson Hyperlegible', Arial, sans-serif;
+        font-size: 12px;
+        resize: vertical;
+        outline: none;
+      "></textarea>
+      
+      <button id="refine-content" class="refinement-button">
+        <span class="button-icon">✨</span>
+        <span class="button-text">Refine with AI</span>
+      </button>
+      
+      <button id="save-without-refine" class="refinement-button">
+        <span class="button-icon">💾</span>
+        <span class="button-text">Save as-is</span>
+      </button>
+      
+      <button id="cancel-refinement" class="refinement-button cancel-button">
+        <span class="button-icon">❌</span>
+        <span class="button-text">Cancel</span>
+      </button>
+      
+      <div style="margin-top: 5px; font-size: 10px; color: var(--text-color); opacity: 0.6; text-align: center;">
+        Enter to refine • Shift+Enter for new line
+      </div>
+    </div>
   </div>
   
   <button class="accordion">How to use</button>
