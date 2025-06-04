@@ -43,6 +43,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     );
     const cancelButton = document.getElementById("cancel-refinement");
 
+    // Hide collective refinement checkbox for single-tab
+    const checkboxContainer = document.querySelector(".checkbox-container");
+    if (checkboxContainer) {
+      console.log("Hiding checkbox for single-tab");
+      checkboxContainer.classList.remove("show-for-multi-tab");
+    }
+
     // Focus the textarea
     setTimeout(() => promptTextarea.focus(), 100);
 
@@ -125,9 +132,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       cancelButton.disabled = true;
 
       try {
+        const collectiveRefinement = document.getElementById(
+          "collective-refinement"
+        ).checked;
+
         const response = await browser.runtime.sendMessage({
           command: "process-refinement",
           prompt: prompt,
+          collective: collectiveRefinement,
         });
 
         if (response.status === "success") {
@@ -235,14 +247,35 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Update button texts for multi-tab
     refineButton.innerHTML = `
-      <span class="button-icon">✨</span>
+      <span class="button-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
+          <path d="M20 3v4"/>
+          <path d="M22 5h-4"/>
+          <path d="M4 17v2"/>
+          <path d="M5 18H3"/>
+        </svg>
+      </span>
       <span class="button-text">Refine ${tabCount} Tabs</span>
     `;
 
     saveWithoutRefineButton.innerHTML = `
-      <span class="button-icon">💾</span>
+      <span class="button-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
+          <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/>
+          <path d="M7 3v4a1 1 0 0 0 1 1h4"/>
+        </svg>
+      </span>
       <span class="button-text">Save ${tabCount} Tabs</span>
     `;
+
+    // Show collective refinement checkbox for multi-tab
+    const checkboxContainer = document.querySelector(".checkbox-container");
+    if (checkboxContainer) {
+      console.log("Showing checkbox for multi-tab");
+      checkboxContainer.classList.add("show-for-multi-tab");
+    }
 
     // Update placeholder
     promptTextarea.placeholder = `Enter refinement instructions for all ${tabCount} tabs...`;
@@ -335,9 +368,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       cancelButton.disabled = true;
 
       try {
+        const collectiveRefinement = document.getElementById(
+          "collective-refinement"
+        ).checked;
+
         const response = await browser.runtime.sendMessage({
           command: "process-refinement",
           prompt: prompt,
+          collective: collectiveRefinement,
         });
 
         if (response && response.status === "success") {
@@ -465,7 +503,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Initialize button labels with new structure
   if (openMarkdownButton) {
     openMarkdownButton.innerHTML = `
-      <span class="action-icon">📁</span>
+      <span class="action-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m6 14 1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"/>
+        </svg>
+      </span>
       <span class="action-text">Open Collection</span>
       <span class="action-hint">Alt+M</span>
     `;
@@ -473,7 +515,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (copyMarkdownButton) {
     copyMarkdownButton.innerHTML = `
-      <span class="action-icon">📋</span>
+      <span class="action-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
+          <path d="m16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+        </svg>
+      </span>
       <span class="action-text">Copy as Markdown</span>
       <span class="action-hint">Alt+C</span>
     `;
@@ -513,7 +560,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         showMessage("Content copied to clipboard!", "success");
         setTimeout(() => {
           copyMarkdownButton.innerHTML = `
-            <span class="action-icon">📋</span>
+            <span class="action-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
+          <path d="m16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+        </svg>
+      </span>
             <span class="action-text">Copy as Markdown</span>
             <span class="action-hint">Alt+C</span>
           `;
@@ -541,7 +593,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         showMessage(response?.message || "Failed to process content", "error");
         setTimeout(() => {
           copyMarkdownButton.innerHTML = `
-            <span class="action-icon">📋</span>
+            <span class="action-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
+          <path d="m16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+        </svg>
+      </span>
             <span class="action-text">Copy as Markdown</span>
             <span class="action-hint">Alt+C</span>
           `;
@@ -558,7 +615,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       showMessage("Error processing content", "error");
       setTimeout(() => {
         copyMarkdownButton.innerHTML = `
-          <span class="action-icon">📋</span>
+          <span class="action-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
+          <path d="m16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+        </svg>
+      </span>
           <span class="action-text">Copy as Markdown</span>
           <span class="action-hint">Alt+C</span>
         `;

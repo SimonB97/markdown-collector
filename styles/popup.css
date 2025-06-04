@@ -101,7 +101,7 @@ html {
     /* Same accent color for consistency */
     --popup-accent-color: #58a6ff !important;
     --popup-accent-hover: #79c0ff !important;
-    --popup-accent-light: rgba(88, 166, 255, 0.15) !important;
+    --popup-accent-light: rgba(88, 166, 255, 0.08) !important;
 
     /* Dark neutrals */
     --popup-background-color: #0d1117 !important;
@@ -174,14 +174,14 @@ body {
   /* Gentle primary action - subtle but distinct */
   background-color: var(--popup-surface-secondary) !important;
   color: var(--popup-text-primary) !important;
-  border: 2px solid var(--popup-accent-color) !important;
+  border: 1px solid var(--popup-border-color) !important;
   border-radius: 6px !important;
-  padding: 12px 16px !important;
+  padding: 10px 14px !important;
   font-family: system-ui, -apple-system, sans-serif !important;
   font-weight: 600 !important;
   font-size: 15px !important;
   cursor: pointer !important;
-  transition: all 0.2s ease !important;
+  transition: none !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
@@ -201,12 +201,12 @@ body {
   color: var(--popup-text-primary) !important;
   border: 1px solid var(--popup-border-color) !important;
   border-radius: 6px !important;
-  padding: 10px 16px !important;
+  padding: 8px 14px !important;
   font-family: system-ui, -apple-system, sans-serif !important;
   font-weight: 500 !important;
   font-size: 14px !important;
   cursor: pointer !important;
-  transition: all 0.2s ease !important;
+  transition: none !important;
   display: flex !important;
   flex-direction: row !important;
   align-items: center !important;
@@ -217,7 +217,6 @@ body {
 }
 
 .secondary-action:hover {
-  border-color: var(--popup-accent-color) !important;
   color: var(--popup-accent-color) !important;
   background-color: var(--popup-accent-light) !important;
 }
@@ -226,6 +225,33 @@ body {
 .action-icon {
   font-size: 20px !important;
   line-height: 1 !important;
+}
+
+/* Main action icon styles */
+.action-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+}
+
+.action-icon svg {
+  display: block !important;
+  width: 20px !important;
+  height: 20px !important;
+}
+
+.utility-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+}
+
+.utility-icon svg {
+  display: block !important;
+  width: 18px !important;
+  height: 18px !important;
 }
 
 .action-text {
@@ -257,10 +283,10 @@ body {
 .utility-action {
   background: none !important;
   border: none !important;
-  padding: 8px !important;
+  padding: 6px !important;
   border-radius: 6px !important;
   cursor: pointer !important;
-  transition: background-color 0.2s ease !important;
+  transition: none !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -364,12 +390,12 @@ body {
   color: var(--popup-text-primary) !important;
   border: 1px solid var(--popup-border-color) !important;
   border-radius: 6px !important;
-  padding: 10px 16px !important;
+  padding: 8px 12px !important;
   font-family: system-ui, -apple-system, sans-serif !important;
   font-size: 14px !important;
   font-weight: 500 !important;
   cursor: pointer !important;
-  transition: all 0.2s ease !important;
+  transition: none !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -379,8 +405,32 @@ body {
   box-sizing: border-box !important;
 }
 
+/* Button icon styles for refinement interface */
+.button-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+}
+
+.button-icon svg {
+  display: block !important;
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.button-text {
+  display: flex !important;
+  align-items: center !important;
+  line-height: 1.2 !important;
+}
+
+/* Specific adjustment for cancel button X icon */
+.cancel-button .button-icon svg {
+  margin-top: 2px !important;
+}
+
 .refinement-button:hover {
-  border-color: var(--popup-accent-color) !important;
   color: var(--popup-accent-color) !important;
   background-color: var(--popup-accent-light) !important;
 }
@@ -407,9 +457,77 @@ body {
 }
 
 .cancel-button:hover {
-  border-color: var(--popup-accent-color) !important;
   color: var(--popup-accent-color) !important;
   background-color: var(--popup-accent-light) !important;
+}
+
+/* Checkbox styling for collective refinement */
+.checkbox-container {
+  margin: 8px 0 12px 0 !important;
+  display: none; /* Hidden by default, shown only for multi-tab */
+}
+
+.checkbox-container.show-for-multi-tab {
+  display: block !important;
+}
+
+.checkbox-label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  color: var(--popup-text-primary) !important;
+  font-family: system-ui, -apple-system, sans-serif !important;
+}
+
+.refinement-checkbox {
+  appearance: none !important;
+  width: 18px !important;
+  height: 18px !important;
+  border: 1px solid var(--popup-border-color) !important;
+  border-radius: 3px !important;
+  background-color: var(--popup-surface-secondary) !important;
+  cursor: pointer !important;
+  position: relative !important;
+  transition: none !important;
+}
+
+.refinement-checkbox:checked {
+  background-color: var(--popup-accent-color) !important;
+  border-color: var(--popup-accent-color) !important;
+}
+
+.checkmark {
+  position: absolute !important;
+  left: 3px !important;
+  top: 3px !important;
+  display: none !important;
+}
+
+.refinement-checkbox:checked + .checkmark {
+  display: block !important;
+}
+
+.checkmark svg {
+  color: white !important;
+  stroke: white !important;
+}
+
+.checkbox-text {
+  user-select: none !important;
+}
+
+/* Button row for save and cancel buttons */
+.button-row {
+  display: flex !important;
+  gap: 8px !important;
+  margin: 6px 0 !important;
+}
+
+.button-row .refinement-button {
+  flex: 1 !important;
+  margin: 0 !important;
 }
 
 /* Textarea Styles - Match main design */
@@ -424,7 +542,7 @@ body {
   border-radius: 6px !important;
   font-family: system-ui, -apple-system, sans-serif !important;
   font-size: 14px !important;
-  resize: vertical !important;
+  resize: none !important;
   outline: none !important;
   box-sizing: border-box !important;
 }

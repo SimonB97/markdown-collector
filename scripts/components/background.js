@@ -86,7 +86,11 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.command === "process-refinement") {
     // Handle refinement processing from popup
     if (pendingRefinement && request.prompt) {
-      processRefinementFromPopup(request.prompt, sendResponse);
+      processRefinementFromPopup(
+        request.prompt,
+        sendResponse,
+        request.collective
+      );
       return true;
     } else if (pendingRefinement && !request.prompt) {
       // Save without refinement
@@ -852,7 +856,11 @@ async function copyToClipboardAndSave(tab, markdown, batchInfo = null) {
 }
 
 // Functions to handle popup-based refinement
-async function processRefinementFromPopup(prompt, sendResponse) {
+async function processRefinementFromPopup(
+  prompt,
+  sendResponse,
+  collective = false
+) {
   try {
     if (!pendingRefinement) {
       sendResponse({ status: "error", message: "No pending content" });
@@ -868,7 +876,70 @@ async function processRefinementFromPopup(prompt, sendResponse) {
       return;
     }
 
-    if (pendingRefinement.isMultiTab && pendingRefinement.allTabs) {
+    if (
+      pendingRefinement.isMultiTab &&
+      pendingRefinement.allTabs &&
+      collective
+    ) {
+      // Collective refinement: combine all tabs and process as one
+      try {
+        const { processBatchContent } = await import("./llmProcessor.js");
+        const batchResult = await processBatchContent(
+          pendingRefinement.allTabs,
+          prompt,
+          apiKey
+        );
+
+        if (batchResult) {
+          // Save the combined result
+          const existingIndex = markdownData.findIndex(
+            (item) => item.url === batchResult.url
+          );
+
+          if (existingIndex !== -1) {
+            markdownData[existingIndex] = batchResult;
+          } else {
+            markdownData.push(batchResult);
+          }
+
+          await browser.storage.local.set({ markdownData });
+
+          // Check if this was triggered by copy-as-markdown
+          const shouldCopy = pendingRefinement.copyAfterRefinement;
+
+          // Clear pending refinement and badge
+          pendingRefinement = null;
+          await browser.browserAction.setBadgeText({ text: "" });
+
+          if (shouldCopy) {
+            try {
+              await navigator.clipboard.writeText(batchResult.markdown);
+              sendResponse({
+                status: "success",
+                message:
+                  "Content refined collectively and copied to clipboard!",
+              });
+            } catch (clipboardError) {
+              console.error("Clipboard error:", clipboardError);
+              sendResponse({
+                status: "success",
+                message: "Content refined collectively and saved!",
+              });
+            }
+          } else {
+            sendResponse({
+              status: "success",
+              message: "Content refined collectively and saved!",
+            });
+          }
+          return;
+        }
+      } catch (error) {
+        console.error("Error in collective refinement:", error);
+        sendResponse({ status: "error", message: error.message });
+        return;
+      }
+    } else if (pendingRefinement.isMultiTab && pendingRefinement.allTabs) {
       // Process multiple tabs with the same prompt
       let processedCount = 0;
       for (const tab of pendingRefinement.allTabs) {
