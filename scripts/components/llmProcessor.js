@@ -20,12 +20,16 @@ export async function refineMDWithLLM(markdown, prompt, apiKey, tabId) {
     ]);
 
     // Show loading indicator
-    await browser.tabs.sendMessage(tabId, { command: "show-loading" });
+    if (tabId) {
+      await browser.tabs.sendMessage(tabId, { command: "show-loading" });
+    }
 
     const response = await callLLMAPI(markdown, prompt, apiKey, model, baseUrl);
 
     // Hide loading indicator
-    await browser.tabs.sendMessage(tabId, { command: "hide-loading" });
+    if (tabId) {
+      await browser.tabs.sendMessage(tabId, { command: "hide-loading" });
+    }
 
     return response;
   } catch (error) {
@@ -34,8 +38,10 @@ export async function refineMDWithLLM(markdown, prompt, apiKey, tabId) {
       model: (await browser.storage.local.get(["model"])).model,
     });
 
-    // Hide loading indicator in case of error
-    await browser.tabs.sendMessage(tabId, { command: "hide-loading" });
+    // Hide loading indicator in case of error (only if tabId is provided)
+    if (tabId) {
+      await browser.tabs.sendMessage(tabId, { command: "hide-loading" });
+    }
 
     // Show detailed error message to user
     const errorMessage = error.message.includes("API error")
@@ -46,11 +52,13 @@ export async function refineMDWithLLM(markdown, prompt, apiKey, tabId) {
       ? `Authentication Error: Invalid API key. Please check your settings.`
       : `LLM Processing Error: ${error.message}`;
 
-    await browser.tabs.sendMessage(tabId, {
-      command: "show-notification",
-      message: errorMessage,
-      type: "error",
-    });
+    if (tabId) {
+      await browser.tabs.sendMessage(tabId, {
+        command: "show-notification",
+        message: errorMessage,
+        type: "error",
+      });
+    }
     return null;
   }
 }

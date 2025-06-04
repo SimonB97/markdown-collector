@@ -44,10 +44,16 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
           if (enableLLM) {
             try {
-              if (request.isFirstTab) {
-                const response = await showPromptPopup(request.isMultiTab);
-                sendResponse({ ...response, markdown });
+              if (request.isFirstTab && !request.isMultiTab) {
+                // Only single-tab operations use popup refinement
+                await processContentForLLM(markdown, request.isMultiTab);
+                sendResponse({ action: "pending-refinement", markdown });
+              } else if (request.isFirstTab && request.isMultiTab) {
+                // Multi-tab operations also use popup refinement
+                await processContentForLLM(markdown, request.isMultiTab);
+                sendResponse({ action: "pending-refinement", markdown });
               } else {
+                // Non-first tabs just return markdown
                 sendResponse({ markdown });
               }
             } catch (error) {
@@ -157,198 +163,16 @@ function convertPageToMarkdown() {
   return `# ${title}\n\n${bodyMarkdown}`;
 }
 
-function showPromptPopup(isMultiTab = false) {
-  return new Promise((resolve) => {
-    const popup = document.createElement("div");
-    popup.style.cssText = `
-      position: fixed;
-      top: 20%;
-      left: 70%;
-      transform: translate(-50%, -50%);
-      background: var(--background-color);
-      color: var(--text-color);
-      padding: 20px;
-      border-radius: 5px;
-      border: 1px solid var(--button-border);
-      box-shadow: 0 0 10px rgba(0,0,0,0.3);
-      z-index: 10000;
-      font-family: 'Atkinson Hyperlegible', Arial, sans-serif;
-      width: 550px;
-    `;
-    popup.innerHTML = `
-      <style>
-        @font-face {
-          font-family: 'Atkinson Hyperlegible';
-          src: url('${browser.runtime.getURL(
-            "fonts/Atkinson-Hyperlegible-Regular-102.ttf"
-          )}') format('truetype');
-          font-weight: normal;
-        }
-        @font-face {
-          font-family: 'Atkinson Hyperlegible';
-          src: url('${browser.runtime.getURL(
-            "fonts/Atkinson-Hyperlegible-Bold-102.ttf"
-          )}') format('truetype');
-          font-weight: bold;
-        }
-        :root {
-          --background-color: ${
-            window.matchMedia("(prefers-color-scheme: dark)").matches
-              ? "#121212"
-              : "#ffffff"
-          };
-          --text-color: ${
-            window.matchMedia("(prefers-color-scheme: dark)").matches
-              ? "#ffffff"
-              : "#000000"
-          };
-          --button-background: ${
-            window.matchMedia("(prefers-color-scheme: dark)").matches
-              ? "#33333388"
-              : "#f0f0f0"
-          };
-          --button-hover-background: ${
-            window.matchMedia("(prefers-color-scheme: dark)").matches
-              ? "#44444485"
-              : "#e0e0e0"
-          };
-          --button-color: ${
-            window.matchMedia("(prefers-color-scheme: dark)").matches
-              ? "#ffffff"
-              : "#000000"
-          };
-          --button-border: ${
-            window.matchMedia("(prefers-color-scheme: dark)").matches
-              ? "#444444"
-              : "#cccccc"
-          };
-        }
-        h3 {
-          margin-top: 0;
-          color: var(--text-color);
-        }
-        input, button {
-          font-family: 'Atkinson Hyperlegible', Arial, sans-serif;
-          padding: 8px;
-          margin: 5px 2px;
-          border-radius: 4px;
-        }
-        input {
-          width: calc(99%);
-          background-color: #ffffff11;
-          color: var(--text-color);
-          border: 0px;
-        }
-        button {
-          background-color: var(--button-background);
-          color: var(--button-color);
-          border: 0px;
-          cursor: pointer;
-        }
-        button span {
-          display: block;
-          font-size: 0.8em;
-          color: var(--text-color-light);
-          margin-top: 2px;
-        }
-        button:hover {
-          background-color: var(--button-hover-background);
-        }
-        .button-container {
-          display: flex;
-          justify-content: space-between;
-          margin-top: 10px;
-        }
-        button {
-          flex: 1;
-          margin: 0 5px;
-        }
-      </style>
-      <h3>Refine Content</h3>
-      <p>Enter a prompt to refine the content:</p>
-      <input type="text" id="refinement-prompt">
-      <div class="button-container">
-        <button id="accept-prompt">Refine<span>(Enter)</span></button>
-        <button id="save-without-refine">Save<span>(Enter with empty prompt)</span></button>
-        <button id="cancel-save">Cancel<span>(Esc)</span></button>
-      </div>
-    `;
-    document.body.appendChild(popup);
-
-    const promptInput = document.getElementById("refinement-prompt");
-    const acceptButton = document.getElementById("accept-prompt");
-    const saveWithoutRefineButton = document.getElementById(
-      "save-without-refine"
-    );
-    const cancelButton = document.getElementById("cancel-save");
-
-    function acceptPrompt() {
-      const prompt = promptInput.value;
-      document.body.removeChild(popup);
-      resolve({ action: "refine", prompt });
-    }
-
-    function saveWithoutRefining() {
-      document.body.removeChild(popup);
-      resolve({ action: "save" });
-    }
-
-    function cancelSave() {
-      document.body.removeChild(popup);
-      resolve({ cancelled: true });
-    }
-
-    function processBatch() {
-      const prompt = promptInput.value;
-      document.body.removeChild(popup);
-      resolve({ action: "batch", prompt });
-    }
-
-    acceptButton.addEventListener("click", acceptPrompt);
-    saveWithoutRefineButton.addEventListener("click", saveWithoutRefining);
-    cancelButton.addEventListener("click", cancelSave);
-
-    // Handle keyboard events
-    promptInput.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") {
-        event.preventDefault();
-
-        // Check for Shift+Enter first
-        if (event.shiftKey && isMultiTab) {
-          processBatch();
-          return;
-        }
-
-        // Regular Enter handling
-        if (promptInput.value.trim()) {
-          acceptPrompt();
-        } else {
-          saveWithoutRefining();
-        }
-      }
-    });
-
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        cancelSave();
-      }
-    });
-
-    // Focus the input field and move cursor to end
-    promptInput.focus();
-    const length = promptInput.value.length;
-    promptInput.setSelectionRange(length, length);
-
-    // Add batch processing button for multi-tab
-    if (isMultiTab) {
-      const batchButton = document.createElement("button");
-      batchButton.id = "batch-process";
-      batchButton.innerHTML = "Process as Batch<span>(Shift+Enter)</span>";
-      document.querySelector(".button-container").appendChild(batchButton);
-
-      batchButton.addEventListener("click", processBatch);
-    }
+// LLM refinement now handled in extension popup - no in-page popup needed
+function processContentForLLM(markdown, isMultiTab = false) {
+  // Store content for popup to handle
+  return browser.runtime.sendMessage({
+    command: "store-for-refinement",
+    markdown,
+    isMultiTab,
+    url: window.location.href,
+    title: document.title,
+    tabCount: isMultiTab ? null : 1, // Will be updated by background script for multi-tab
   });
 }
 
@@ -379,4 +203,174 @@ function showNotification(message, type = "info") {
       document.body.removeChild(notification);
     }
   }, timeout);
+}
+
+// Traditional dialog for multi-tab operations
+async function showTraditionalDialog() {
+  console.log("showTraditionalDialog() called");
+
+  return new Promise((resolve) => {
+    console.log("Creating dialog overlay");
+
+    // Create dialog overlay
+    const overlay = document.createElement("div");
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      z-index: 10001;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    `;
+
+    // Create dialog box
+    const dialog = document.createElement("div");
+    dialog.style.cssText = `
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      font-family: Arial, sans-serif;
+    `;
+
+    dialog.innerHTML = `
+      <h3 style="margin-top: 0; color: #333;">Process Multiple Tabs</h3>
+      <p style="color: #666; margin-bottom: 20px;">Choose how to process the selected tabs:</p>
+      
+      <div style="margin-bottom: 15px;">
+        <button id="save-only" style="
+          width: 100%;
+          padding: 12px;
+          margin-bottom: 10px;
+          border: 2px solid #ddd;
+          border-radius: 5px;
+          background: white;
+          cursor: pointer;
+          font-size: 14px;
+        ">💾 Save without refinement</button>
+      </div>
+      
+      <div style="margin-bottom: 15px;">
+        <button id="batch-refine" style="
+          width: 100%;
+          padding: 12px;
+          margin-bottom: 10px;
+          border: 2px solid #007cba;
+          border-radius: 5px;
+          background: #f0f8ff;
+          cursor: pointer;
+          font-size: 14px;
+        ">🚀 Batch process with same prompt</button>
+      </div>
+      
+      <div style="margin-bottom: 20px;">
+        <button id="individual-refine" style="
+          width: 100%;
+          padding: 12px;
+          margin-bottom: 10px;
+          border: 2px solid #28a745;
+          border-radius: 5px;
+          background: #f0fff0;
+          cursor: pointer;
+          font-size: 14px;
+        ">⚙️ Refine each tab individually</button>
+      </div>
+      
+      <div id="prompt-section" style="display: none; margin-bottom: 15px;">
+        <label style="display: block; margin-bottom: 5px; color: #333; font-weight: bold;">
+          Refinement Prompt:
+        </label>
+        <textarea id="refinement-prompt" placeholder="Enter your refinement instructions..." style="
+          width: 100%;
+          height: 80px;
+          padding: 8px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 14px;
+          resize: vertical;
+        "></textarea>
+      </div>
+      
+      <div style="text-align: right;">
+        <button id="cancel-btn" style="
+          padding: 8px 16px;
+          margin-right: 10px;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+          background: white;
+          cursor: pointer;
+        ">Cancel</button>
+        <button id="proceed-btn" style="
+          padding: 8px 16px;
+          border: none;
+          border-radius: 4px;
+          background: #007cba;
+          color: white;
+          cursor: pointer;
+          display: none;
+        ">Proceed</button>
+      </div>
+    `;
+
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+
+    const promptSection = dialog.querySelector("#prompt-section");
+    const promptTextarea = dialog.querySelector("#refinement-prompt");
+    const proceedBtn = dialog.querySelector("#proceed-btn");
+
+    let selectedAction = null;
+
+    // Button event handlers
+    dialog.querySelector("#save-only").addEventListener("click", () => {
+      selectedAction = "save";
+      promptSection.style.display = "none";
+      proceedBtn.style.display = "none";
+      finishDialog();
+    });
+
+    dialog.querySelector("#batch-refine").addEventListener("click", () => {
+      selectedAction = "batch";
+      promptSection.style.display = "block";
+      proceedBtn.style.display = "inline-block";
+      promptTextarea.focus();
+    });
+
+    dialog.querySelector("#individual-refine").addEventListener("click", () => {
+      selectedAction = "refine";
+      promptSection.style.display = "block";
+      proceedBtn.style.display = "inline-block";
+      promptTextarea.focus();
+    });
+
+    dialog.querySelector("#cancel-btn").addEventListener("click", () => {
+      document.body.removeChild(overlay);
+      resolve({ action: null, prompt: null, cancelled: true });
+    });
+
+    dialog.querySelector("#proceed-btn").addEventListener("click", () => {
+      finishDialog();
+    });
+
+    function finishDialog() {
+      const prompt =
+        selectedAction === "save" ? null : promptTextarea.value.trim();
+      document.body.removeChild(overlay);
+      resolve({ action: selectedAction, prompt: prompt });
+    }
+
+    // Close on overlay click
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) {
+        document.body.removeChild(overlay);
+        resolve({ action: null, prompt: null, cancelled: true });
+      }
+    });
+  });
 }

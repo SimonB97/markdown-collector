@@ -18,10 +18,88 @@
 import { getSelectedTabs } from "./tabManager.js";
 import { refineMDWithLLM, processBatchContent } from "./llmProcessor.js";
 
+// Store for pending refinement
+let pendingRefinement = null;
+
+// Tab event listeners to reset refinement state on tab switch
+browser.tabs.onActivated.addListener((activeInfo) => {
+  handleTabSwitch(activeInfo.tabId, activeInfo.windowId);
+});
+
+browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  // Reset on navigation within a tab (URL change)
+  if (changeInfo.url && pendingRefinement) {
+    handleTabSwitch(tabId, tab.windowId);
+  }
+});
+
+// Function to handle tab switching and clear refinement state if needed
+function handleTabSwitch(newTabId, windowId) {
+  if (!pendingRefinement) return;
+
+  // Check if switched to a different tab than the ones involved in refinement
+  const isOriginalTab = pendingRefinement.originTabIds?.includes(newTabId);
+  const isSameWindow = pendingRefinement.windowId === windowId;
+
+  if (!isOriginalTab || !isSameWindow) {
+    clearPendingRefinement("tab-switch");
+  }
+}
+
+// Centralized function to clear pending refinement state
+function clearPendingRefinement(reason = "manual") {
+  if (pendingRefinement) {
+    console.log(`🧹 Clearing pending refinement state (reason: ${reason})`);
+    pendingRefinement = null;
+    browser.browserAction.setBadgeText({ text: "" });
+    browser.browserAction.setBadgeBackgroundColor({ color: "#000000" });
+  }
+}
+
 browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log("Received message:", request);
 
-  if (request.command === "save-url") {
+  if (request.command === "store-for-refinement") {
+    // Store content for refinement in popup
+    pendingRefinement = {
+      markdown: request.markdown,
+      isMultiTab: request.isMultiTab,
+      url: request.url,
+      title: request.title,
+      timestamp: Date.now(),
+      tabCount: request.tabCount || 1,
+      originTabIds: [sender.tab?.id].filter(Boolean), // Store the originating tab ID
+      windowId: sender.tab?.windowId, // Store the window ID
+    };
+    console.log("Stored pending refinement:", pendingRefinement);
+    // Badge will be set later when we know the actual tab count
+    sendResponse({ status: "stored" });
+  } else if (request.command === "get-pending-refinement") {
+    console.log(
+      "Get pending refinement request, current pendingRefinement:",
+      pendingRefinement
+    );
+    sendResponse({ pendingRefinement });
+  } else if (request.command === "clear-pending-refinement") {
+    clearPendingRefinement("user-cancel");
+    sendResponse({ status: "cleared" });
+  } else if (request.command === "process-refinement") {
+    // Handle refinement processing from popup
+    if (pendingRefinement && request.prompt) {
+      processRefinementFromPopup(
+        request.prompt,
+        sendResponse,
+        request.collective
+      );
+      return true;
+    } else if (pendingRefinement && !request.prompt) {
+      // Save without refinement
+      saveWithoutRefinement(sendResponse);
+      return true;
+    } else {
+      sendResponse({ status: "error", message: "No pending content" });
+    }
+  } else if (request.command === "save-url") {
     saveCurrentTabUrl()
       .then((response) => {
         sendResponse(response);
@@ -48,12 +126,29 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.command === "fetch-url") {
     fetchUrl(request.url, sendResponse);
     return true;
+  } else if (request.command === "copy-as-markdown") {
+    copyAsMarkdown()
+      .then((response) => {
+        sendResponse(response || { status: "success" });
+      })
+      .catch((error) => {
+        console.error("Error in copy-as-markdown command:", {
+          error: error.message,
+          stack: error.stack,
+        });
+        sendResponse({ status: "error", message: error.message });
+      });
+    return true;
   }
 });
 
 async function saveCurrentTabUrl() {
+  console.log(
+    "🚀 saveCurrentTabUrl() function called (this handles copy-as-markdown)"
+  );
   try {
     const selectedTabs = await getSelectedTabs();
+    console.log("📊 Selected tabs count:", selectedTabs.length);
 
     if (selectedTabs.length === 0) {
       return { status: "No tabs selected" };
@@ -92,10 +187,10 @@ async function saveCurrentTabUrl() {
       return { status: "URLs saved successfully" };
     }
 
-    // For LLM processing with multiple tabs
+    // For LLM processing, handle single vs multi-tab differently
     const isMultiTab = selectedTabs.length > 1;
 
-    // Get prompt from first tab
+    // All tabs (single and multi) now use popup approach
     const firstTabResponse = await browser.tabs.sendMessage(
       selectedTabs[0].id,
       {
@@ -105,98 +200,107 @@ async function saveCurrentTabUrl() {
       }
     );
 
-    if (!firstTabResponse || firstTabResponse.cancelled) {
-      return { status: "Operation cancelled" };
-    }
+    console.log("Checking firstTabResponse:", {
+      hasResponse: !!firstTabResponse,
+      action: firstTabResponse?.action,
+      isMultiTab: isMultiTab,
+      enableLLM: enableLLM,
+      hasApiKey: !!apiKey,
+    });
 
-    // If no prompt provided or empty prompt, process directly without LLM
-    // regardless of whether Enter or Shift+Enter was used
-    if (
-      firstTabResponse.action === "save" ||
-      !firstTabResponse.prompt?.trim()
-    ) {
-      await processTabsDirectly(selectedTabs, markdownData);
-      await browser.tabs.sendMessage(selectedTabs[0].id, {
-        command: "show-notification",
-        message: `${selectedTabs.length} page${
-          selectedTabs.length > 1 ? "s" : ""
-        } saved successfully`,
-      });
-      return { status: "URLs saved without refinement" };
-    }
+    if (firstTabResponse && firstTabResponse.action === "pending-refinement") {
+      console.log("✅ Taking popup refinement path for multi-tab");
+      // Update badge and pending refinement with correct data FIRST
+      if (pendingRefinement) {
+        pendingRefinement.tabCount = selectedTabs.length;
+        pendingRefinement.isMultiTab = isMultiTab;
+        pendingRefinement.allTabs = selectedTabs; // Add all tabs for multi-tab processing
+        pendingRefinement.copyAfterRefinement = true; // This is a copy operation
+        pendingRefinement.originTabIds = selectedTabs.map((tab) => tab.id); // Store all tab IDs
+        pendingRefinement.windowId = selectedTabs[0]?.windowId; // Store window ID
 
-    if (firstTabResponse.action === "batch") {
-      const batchResult = await processBatchContent(
-        selectedTabs,
-        firstTabResponse.prompt,
-        apiKey
-      );
-      if (batchResult) {
-        markdownData.push(batchResult);
-        await browser.storage.local.set({ markdownData });
-        await browser.tabs.sendMessage(selectedTabs[0].id, {
-          command: "show-notification",
-          message: `${selectedTabs.length} pages processed and saved as batch`,
-        });
-        return { status: "Batch processing completed successfully" };
-      } else {
-        // If batch processing returned null (empty prompt), fall back to individual processing
-        await processTabsDirectly(selectedTabs, markdownData);
-        await browser.tabs.sendMessage(selectedTabs[0].id, {
-          command: "show-notification",
-          message: `${selectedTabs.length} page${
-            selectedTabs.length > 1 ? "s" : ""
-          } saved successfully`,
-        });
-        return { status: "URLs saved without refinement" };
+        const badgeText = selectedTabs.length.toString();
+        browser.browserAction.setBadgeText({ text: badgeText });
+        browser.browserAction.setBadgeBackgroundColor({ color: "#FF6B35" });
+
+        console.log(
+          "Updated pending refinement for multi-tab:",
+          pendingRefinement
+        );
       }
-    } else if (firstTabResponse.action === "refine") {
-      let processedCount = 0;
-      for (const tab of selectedTabs) {
-        const tabResponse = await browser.tabs.sendMessage(tab.id, {
-          command: "convert-to-markdown",
-          isFirstTab: false,
-        });
 
-        if (tabResponse && tabResponse.markdown) {
-          processedCount++;
-          const refinedMarkdown = await refineMDWithLLM(
-            tabResponse.markdown,
-            firstTabResponse.prompt,
-            apiKey,
-            tab.id
-          );
+      // Now that data is correct, open popup for refinement
+      try {
+        browser.browserAction.openPopup();
+      } catch (error) {
+        // Fallback notification if popup can't be opened automatically
+        console.log(
+          "Could not auto-open popup, user will need to click extension icon"
+        );
+      }
 
-          if (refinedMarkdown) {
-            const existingIndex = markdownData.findIndex(
-              (item) => item.url === tab.url
-            );
-            const newEntry = {
-              url: tab.url,
-              title: tab.title,
-              markdown: refinedMarkdown,
-              savedAt: new Date().toISOString(),
-            };
+      // Content is now stored for popup refinement
+      return {
+        status: "pending-refinement",
+        message: "Content ready for refinement - popup opened",
+      };
+    }
 
-            if (existingIndex !== -1) {
-              markdownData[existingIndex] = newEntry;
-            } else {
-              markdownData.push(newEntry);
-            }
-          }
+    // Fallback to direct processing if no LLM refinement needed
+    console.log(
+      "❌ Not taking popup refinement path, falling back to direct processing:",
+      {
+        hasFirstTabResponse: !!firstTabResponse,
+        firstTabResponseAction: firstTabResponse?.action,
+        enableLLM: enableLLM,
+        hasApiKey: !!apiKey,
+      }
+    );
+
+    if (!firstTabResponse || !enableLLM || !apiKey) {
+      const tabResponse = await browser.tabs.sendMessage(selectedTabs[0].id, {
+        command: "convert-to-markdown",
+        isMultiTab: false,
+        isFirstTab: true,
+      });
+
+      if (tabResponse && tabResponse.action === "pending-refinement") {
+        // Update badge with correct tab count for save operation
+        if (pendingRefinement) {
+          pendingRefinement.tabCount = selectedTabs.length;
+          pendingRefinement.originTabIds = selectedTabs.map((tab) => tab.id); // Store all tab IDs
+          pendingRefinement.windowId = selectedTabs[0]?.windowId; // Store window ID
+          const badgeText = selectedTabs.length.toString();
+          browser.browserAction.setBadgeText({ text: badgeText });
+          browser.browserAction.setBadgeBackgroundColor({ color: "#FF6B35" });
         }
+
+        // Automatically open popup for refinement
+        try {
+          browser.browserAction.openPopup();
+        } catch (error) {
+          // Fallback notification if popup can't be opened automatically
+          console.log(
+            "Could not auto-open popup, user will need to click extension icon"
+          );
+        }
+
+        // Content is now stored for popup refinement
+        return {
+          status: "Content ready for refinement - popup opened",
+        };
       }
-      await browser.storage.local.set({ markdownData });
-      await browser.tabs.sendMessage(selectedTabs[0].id, {
-        command: "show-notification",
-        message: `${processedCount} page${
-          processedCount > 1 ? "s" : ""
-        } processed and saved`,
-      });
-      return { status: "Individual processing completed successfully" };
     }
 
-    return { status: "No action taken" };
+    // Fallback to direct processing
+    await processTabsDirectly(selectedTabs, markdownData);
+    await browser.tabs.sendMessage(selectedTabs[0].id, {
+      command: "show-notification",
+      message: `${selectedTabs.length} page${
+        selectedTabs.length > 1 ? "s" : ""
+      } saved successfully`,
+    });
+    return { status: "URLs saved successfully" };
   } catch (error) {
     console.error("Error in saveCurrentTabUrl:", error.message);
 
@@ -568,8 +672,10 @@ function revertMarkdownData(tab) {
  * the message to the content script.
  */
 async function copyAsMarkdown() {
+  console.log("🚀 ACTUAL copyAsMarkdown() function called");
   try {
     const selectedTabs = await getSelectedTabs();
+    console.log("📊 Selected tabs in copyAsMarkdown:", selectedTabs.length);
 
     if (!selectedTabs.length) {
       console.error("No tabs selected");
@@ -586,17 +692,28 @@ async function copyAsMarkdown() {
     const apiKey = result.apiKey;
     let markdownData = result.markdownData || [];
 
+    console.log("🔍 copyAsMarkdown settings:", {
+      enableLLM,
+      hasApiKey: !!apiKey,
+      selectedTabsCount: selectedTabs.length,
+    });
+
     // If LLM is disabled or no API key, process all tabs directly
     if (!enableLLM || !apiKey) {
+      console.log(
+        "❌ LLM disabled or no API key, falling back to direct processing"
+      );
       await processTabsDirectly(selectedTabs, markdownData);
       await copyTabsDirectly(selectedTabs);
       return;
     }
 
-    // For LLM processing with multiple tabs
+    // For LLM processing - both single and multi-tab now use popup approach
     const isMultiTab = selectedTabs.length > 1;
 
-    // Get prompt from first tab
+    console.log("✅ LLM enabled, proceeding with popup refinement flow");
+
+    // All tabs (single and multi) now use popup approach
     const firstTabResponse = await browser.tabs.sendMessage(
       selectedTabs[0].id,
       {
@@ -606,101 +723,57 @@ async function copyAsMarkdown() {
       }
     );
 
-    if (!firstTabResponse || firstTabResponse.cancelled) {
-      return;
-    }
+    console.log("📝 First tab response:", {
+      hasResponse: !!firstTabResponse,
+      action: firstTabResponse?.action,
+      isMultiTab: isMultiTab,
+    });
 
-    // If no prompt provided, process directly without LLM
-    if (
-      firstTabResponse.action === "save" ||
-      !firstTabResponse.prompt?.trim()
-    ) {
-      // First save all tabs individually
-      await processTabsDirectly(selectedTabs, markdownData);
+    if (firstTabResponse && firstTabResponse.action === "pending-refinement") {
+      console.log("✅ Taking popup refinement path");
+      // Update badge and pending refinement with correct data FIRST
+      if (pendingRefinement) {
+        pendingRefinement.tabCount = selectedTabs.length;
+        pendingRefinement.isMultiTab = isMultiTab;
+        pendingRefinement.allTabs = selectedTabs; // Add all tabs for multi-tab processing
+        pendingRefinement.copyAfterRefinement = true; // This is a copy operation
+        pendingRefinement.originTabIds = selectedTabs.map((tab) => tab.id); // Store all tab IDs
+        pendingRefinement.windowId = selectedTabs[0]?.windowId; // Store window ID
 
-      // Then combine for clipboard only
-      let combinedMarkdown = "";
-      for (const tab of selectedTabs) {
-        const response = await browser.tabs.sendMessage(tab.id, {
-          command: "convert-to-markdown",
-        });
-        if (response && response.markdown) {
-          combinedMarkdown += `<url>${tab.url}</url>\n<title>${tab.title}</title>\n${response.markdown}\n\n`;
-        }
-      }
+        const badgeText = selectedTabs.length.toString();
+        browser.browserAction.setBadgeText({ text: badgeText });
+        browser.browserAction.setBadgeBackgroundColor({ color: "#FF6B35" });
 
-      // Copy combined version to clipboard
-      await navigator.clipboard.writeText(combinedMarkdown);
-      await browser.tabs.sendMessage(selectedTabs[0].id, {
-        command: "show-notification",
-        message: `${selectedTabs.length} pages copied and saved`,
-      });
-      return;
-    }
-
-    if (firstTabResponse.action === "batch") {
-      const batchResult = await processBatchContent(
-        selectedTabs,
-        firstTabResponse.prompt,
-        apiKey
-      );
-      if (batchResult) {
-        await copyToClipboardAndSave(
-          selectedTabs[0],
-          batchResult.markdown,
-          batchResult
+        console.log(
+          "🔄 Updated pending refinement for copy operation:",
+          pendingRefinement
         );
-      } else {
-        // If batch processing returned null (empty prompt), process individually
-        await processTabsDirectly(selectedTabs, markdownData); // Save as individual entries
-        await copyTabsDirectly(selectedTabs); // Combine only for clipboard
       }
-    } else if (firstTabResponse.action === "refine") {
-      let combinedMarkdown = "";
-      for (const tab of selectedTabs) {
-        const tabResponse = await browser.tabs.sendMessage(tab.id, {
-          command: "convert-to-markdown",
-          isFirstTab: false,
-        });
 
-        if (tabResponse && tabResponse.markdown) {
-          const refinedMarkdown = await refineMDWithLLM(
-            tabResponse.markdown,
-            firstTabResponse.prompt,
-            apiKey,
-            tab.id
-          );
-
-          if (refinedMarkdown) {
-            // Save individual entry
-            const existingIndex = markdownData.findIndex(
-              (item) => item.url === tab.url
-            );
-            const newEntry = {
-              url: tab.url,
-              title: tab.title,
-              markdown: refinedMarkdown,
-              savedAt: new Date().toISOString(),
-            };
-
-            if (existingIndex !== -1) {
-              markdownData[existingIndex] = newEntry;
-            } else {
-              markdownData.push(newEntry);
-            }
-
-            // Add to combined markdown for clipboard
-            combinedMarkdown += `<url>${tab.url}</url>\n<title>${tab.title}</title>\n${refinedMarkdown}\n\n`;
-          }
-        }
+      // Now that data is correct, open popup for refinement
+      try {
+        browser.browserAction.openPopup();
+      } catch (error) {
+        // Fallback notification if popup can't be opened automatically
+        console.log(
+          "Could not auto-open popup, user will need to click extension icon"
+        );
       }
-      await browser.storage.local.set({ markdownData });
-      await navigator.clipboard.writeText(combinedMarkdown);
-      await browser.tabs.sendMessage(selectedTabs[0].id, {
-        command: "show-notification",
-        message: "Markdown copied to clipboard and saved",
-      });
+
+      // Content is now stored for popup refinement
+      return {
+        status: "pending-refinement",
+        message: "Content ready for refinement - popup opened",
+      };
     }
+
+    // Fallback to direct processing if no LLM refinement needed
+    console.log(
+      "❌ Not taking popup refinement path, falling back to direct copy"
+    );
+    await processTabsDirectly(selectedTabs, markdownData);
+    await copyTabsDirectly(selectedTabs);
+    return { status: "success" };
   } catch (error) {
     console.error("Error in copyAsMarkdown:", error);
     throw error;
@@ -779,5 +852,380 @@ async function copyToClipboardAndSave(tab, markdown, batchInfo = null) {
       message: "Failed to copy to clipboard, but Markdown was saved",
       type: "warning",
     });
+  }
+}
+
+// Functions to handle popup-based refinement
+async function processRefinementFromPopup(
+  prompt,
+  sendResponse,
+  collective = false
+) {
+  try {
+    if (!pendingRefinement) {
+      sendResponse({ status: "error", message: "No pending content" });
+      return;
+    }
+
+    const result = await browser.storage.local.get(["apiKey", "markdownData"]);
+    const apiKey = result.apiKey;
+    const markdownData = result.markdownData || [];
+
+    if (!apiKey) {
+      sendResponse({ status: "error", message: "No API key configured" });
+      return;
+    }
+
+    if (
+      pendingRefinement.isMultiTab &&
+      pendingRefinement.allTabs &&
+      collective
+    ) {
+      // Collective refinement: combine all tabs and process as one
+      try {
+        const { processBatchContent } = await import("./llmProcessor.js");
+        const batchResult = await processBatchContent(
+          pendingRefinement.allTabs,
+          prompt,
+          apiKey
+        );
+
+        if (batchResult) {
+          // Save the combined result
+          const existingIndex = markdownData.findIndex(
+            (item) => item.url === batchResult.url
+          );
+
+          if (existingIndex !== -1) {
+            markdownData[existingIndex] = batchResult;
+          } else {
+            markdownData.push(batchResult);
+          }
+
+          await browser.storage.local.set({ markdownData });
+
+          // Check if this was triggered by copy-as-markdown
+          const shouldCopy = pendingRefinement.copyAfterRefinement;
+
+          // Clear pending refinement and badge
+          pendingRefinement = null;
+          await browser.browserAction.setBadgeText({ text: "" });
+
+          if (shouldCopy) {
+            try {
+              await navigator.clipboard.writeText(batchResult.markdown);
+              sendResponse({
+                status: "success",
+                message:
+                  "Content refined collectively and copied to clipboard!",
+              });
+            } catch (clipboardError) {
+              console.error("Clipboard error:", clipboardError);
+              sendResponse({
+                status: "success",
+                message: "Content refined collectively and saved!",
+              });
+            }
+          } else {
+            sendResponse({
+              status: "success",
+              message: "Content refined collectively and saved!",
+            });
+          }
+          return;
+        }
+      } catch (error) {
+        console.error("Error in collective refinement:", error);
+        sendResponse({ status: "error", message: error.message });
+        return;
+      }
+    } else if (pendingRefinement.isMultiTab && pendingRefinement.allTabs) {
+      // Process multiple tabs with the same prompt
+      let processedCount = 0;
+      for (const tab of pendingRefinement.allTabs) {
+        try {
+          // Get markdown for each tab
+          const tabResponse = await browser.tabs.sendMessage(tab.id, {
+            command: "convert-to-markdown",
+            isFirstTab: false,
+          });
+
+          if (tabResponse && tabResponse.markdown) {
+            const refinedMarkdown = await refineMDWithLLM(
+              tabResponse.markdown,
+              prompt,
+              apiKey,
+              tab.id
+            );
+
+            if (refinedMarkdown) {
+              const existingIndex = markdownData.findIndex(
+                (item) => item.url === tab.url
+              );
+              const newEntry = {
+                url: tab.url,
+                title: tab.title,
+                markdown: refinedMarkdown,
+                savedAt: new Date().toISOString(),
+              };
+
+              if (existingIndex !== -1) {
+                markdownData[existingIndex] = newEntry;
+              } else {
+                markdownData.push(newEntry);
+              }
+              processedCount++;
+            }
+          }
+        } catch (error) {
+          console.error(`Error processing tab ${tab.url}:`, error);
+        }
+      }
+
+      await browser.storage.local.set({ markdownData });
+
+      // Check if this was triggered by copy-as-markdown
+      const shouldCopy = pendingRefinement.copyAfterRefinement;
+      const allTabUrls = pendingRefinement.allTabs.map((tab) => tab.url);
+
+      // Clear pending refinement and badge
+      clearPendingRefinement("refinement-complete");
+
+      if (shouldCopy) {
+        // For multi-tab copy, combine all refined content
+        let combinedMarkdown = "";
+        for (const item of markdownData.filter((item) =>
+          allTabUrls.includes(item.url)
+        )) {
+          combinedMarkdown += `<url>${item.url}</url>\n<title>${item.title}</title>\n${item.markdown}\n\n`;
+        }
+
+        try {
+          await navigator.clipboard.writeText(combinedMarkdown);
+          sendResponse({
+            status: "success",
+            message: `${processedCount} tabs refined, saved and copied to clipboard`,
+          });
+        } catch (err) {
+          sendResponse({
+            status: "success",
+            message: `${processedCount} tabs refined and saved (clipboard copy failed)`,
+          });
+        }
+      } else {
+        sendResponse({
+          status: "success",
+          message: `${processedCount} tabs refined and saved`,
+        });
+      }
+    } else {
+      // Process single tab (original logic)
+      const refinedMarkdown = await refineMDWithLLM(
+        pendingRefinement.markdown,
+        prompt,
+        apiKey,
+        null // No tabId needed for popup refinement
+      );
+
+      if (refinedMarkdown) {
+        // Save refined content
+        const existingIndex = markdownData.findIndex(
+          (item) => item.url === pendingRefinement.url
+        );
+        const newEntry = {
+          url: pendingRefinement.url,
+          title: pendingRefinement.title,
+          markdown: refinedMarkdown,
+          savedAt: new Date().toISOString(),
+        };
+
+        if (existingIndex !== -1) {
+          markdownData[existingIndex] = newEntry;
+        } else {
+          markdownData.push(newEntry);
+        }
+
+        await browser.storage.local.set({ markdownData });
+
+        // Check if this was triggered by copy-as-markdown
+        const shouldCopy = pendingRefinement.copyAfterRefinement;
+
+        // Clear pending refinement and badge
+        clearPendingRefinement("refinement-complete");
+
+        // If this was a copy operation, copy to clipboard
+        if (shouldCopy) {
+          const markdownWithMeta = `<url>${newEntry.url}</url>\n<title>${newEntry.title}</title>\n${refinedMarkdown}`;
+          try {
+            await navigator.clipboard.writeText(markdownWithMeta);
+            sendResponse({
+              status: "success",
+              message: "Content refined, saved and copied to clipboard",
+              markdown: refinedMarkdown,
+            });
+          } catch (err) {
+            sendResponse({
+              status: "success",
+              message: "Content refined and saved (clipboard copy failed)",
+              markdown: refinedMarkdown,
+            });
+          }
+        } else {
+          sendResponse({
+            status: "success",
+            message: "Content refined and saved",
+            markdown: refinedMarkdown,
+          });
+        }
+      } else {
+        sendResponse({ status: "error", message: "Failed to refine content" });
+      }
+    }
+  } catch (error) {
+    console.error("Error in processRefinementFromPopup:", error);
+    sendResponse({ status: "error", message: error.message });
+  }
+}
+
+async function saveWithoutRefinement(sendResponse) {
+  try {
+    if (!pendingRefinement) {
+      sendResponse({ status: "error", message: "No pending content" });
+      return;
+    }
+
+    const result = await browser.storage.local.get(["markdownData"]);
+    let markdownData = result.markdownData || [];
+
+    // Check if this is multi-tab or single-tab
+    if (pendingRefinement.isMultiTab && pendingRefinement.allTabs) {
+      console.log(
+        "🔄 Processing multi-tab save without refinement:",
+        pendingRefinement.allTabs.length,
+        "tabs"
+      );
+
+      // Process all tabs
+      let combinedMarkdown = "";
+      let processedCount = 0;
+
+      for (const tab of pendingRefinement.allTabs) {
+        try {
+          // Get content from each tab
+          const response = await browser.tabs.sendMessage(tab.id, {
+            command: "convert-to-markdown",
+          });
+
+          if (response && response.markdown) {
+            processedCount++;
+
+            // Save each tab individually
+            const existingIndex = markdownData.findIndex(
+              (item) => item.url === tab.url
+            );
+            const newEntry = {
+              url: tab.url,
+              title: tab.title,
+              markdown: response.markdown,
+              savedAt: new Date().toISOString(),
+            };
+
+            if (existingIndex !== -1) {
+              markdownData[existingIndex] = newEntry;
+            } else {
+              markdownData.push(newEntry);
+            }
+
+            // Add to combined clipboard content
+            combinedMarkdown += `<url>${tab.url}</url>\n<title>${tab.title}</title>\n${response.markdown}\n\n`;
+          }
+        } catch (error) {
+          console.error(`Error processing tab ${tab.url}:`, error);
+        }
+      }
+
+      await browser.storage.local.set({ markdownData });
+
+      // Check if this was triggered by copy-as-markdown
+      const shouldCopy = pendingRefinement.copyAfterRefinement;
+
+      // Clear pending refinement and badge
+      clearPendingRefinement("save-complete");
+
+      // If this was a copy operation, copy combined content to clipboard
+      if (shouldCopy) {
+        try {
+          await navigator.clipboard.writeText(combinedMarkdown);
+          sendResponse({
+            status: "success",
+            message: `${processedCount} tabs saved and copied to clipboard`,
+          });
+        } catch (err) {
+          sendResponse({
+            status: "success",
+            message: `${processedCount} tabs saved (clipboard copy failed)`,
+          });
+        }
+      } else {
+        sendResponse({
+          status: "success",
+          message: `${processedCount} tabs saved without refinement`,
+        });
+      }
+    } else {
+      // Single tab processing (original logic)
+      const existingIndex = markdownData.findIndex(
+        (item) => item.url === pendingRefinement.url
+      );
+      const newEntry = {
+        url: pendingRefinement.url,
+        title: pendingRefinement.title,
+        markdown: pendingRefinement.markdown,
+        savedAt: new Date().toISOString(),
+      };
+
+      if (existingIndex !== -1) {
+        markdownData[existingIndex] = newEntry;
+      } else {
+        markdownData.push(newEntry);
+      }
+
+      await browser.storage.local.set({ markdownData });
+
+      // Check if this was triggered by copy-as-markdown
+      const shouldCopy = pendingRefinement.copyAfterRefinement;
+      const savedMarkdown = pendingRefinement.markdown;
+
+      // Clear pending refinement and badge
+      clearPendingRefinement("save-complete");
+
+      // If this was a copy operation, copy to clipboard
+      if (shouldCopy) {
+        const markdownWithMeta = `<url>${newEntry.url}</url>\n<title>${newEntry.title}</title>\n${savedMarkdown}`;
+        try {
+          await navigator.clipboard.writeText(markdownWithMeta);
+          sendResponse({
+            status: "success",
+            message: "Content saved and copied to clipboard",
+            markdown: savedMarkdown,
+          });
+        } catch (err) {
+          sendResponse({
+            status: "success",
+            message: "Content saved (clipboard copy failed)",
+            markdown: savedMarkdown,
+          });
+        }
+      } else {
+        sendResponse({
+          status: "success",
+          message: "Content saved without refinement",
+          markdown: savedMarkdown,
+        });
+      }
+    }
+  } catch (error) {
+    console.error("Error in saveWithoutRefinement:", error);
+    sendResponse({ status: "error", message: error.message });
   }
 }

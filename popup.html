@@ -1,187 +1,218 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="UTF-8">
-  <title>URL to Markdown Collector</title>
-  <style>
-    @font-face {
-      font-family: 'Atkinson Hyperlegible';
-      src: url('fonts/Atkinson-Hyperlegible-Regular-102.ttf') format('truetype');
-      font-weight: normal;
-    }
-    @font-face {
-      font-family: 'Atkinson Hyperlegible';
-      src: url('fonts/Atkinson-Hyperlegible-Bold-102.ttf') format('truetype');
-      font-weight: bold;
-    }
-    body {
-      font-family: 'Atkinson Hyperlegible', Arial, sans-serif;
-      width: 200px;
-      padding: 10px;
-      background-color: var(--background-color);
-      color: var(--text-color);
-      position: relative;
-    }
-    .button-container {
-      display: flex;
-      justify-content: space-between;
-    }
-    .button-container button {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      height:100px; /* Adjust as needed */
-    }
-    .button-icon {
-      font-size: 2em;
-      margin-bottom: 5px;
-    }
-    .button-text {
-      color: var(--text-color);
-      font-size: 0.9em;
-      margin-bottom: 2px;
-    }
-    .shortcut-hint {
-      font-size: 0.7em;
-      color: var(--text-color-light);
-    }
-    button {
-      flex: 1;
-      padding: 8px;
-      margin: 5px 2px;
-      background-color: var(--button-background);
-      color: var(--button-color);
-      border: 0px;
-      font-family: 'Atkinson Hyperlegible', Arial, sans-serif;
-    }
-    button:hover {
-      background-color: var(--button-hover-background);
-    }
-    .settings-container {
-      text-align: right;
-      margin-top: 0px;
-      margin-bottom: 0px;
-      padding-bottom: 0px;
-    }
-    .settings-container button {
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 0;
-    }
-    .settings-container img {
-      width: 24px;
-      height: 24px;
-    }
-    .info-container {
-      margin-top: 0px;
-      font-size: 14px;
-      color: var(--text-color-light);
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <title>URL to Markdown Collector</title>
+    <link rel="stylesheet" href="styles/popup.css" />
+  </head>
+  <body>
+    <!-- Normal interface -->
+    <div id="normal-interface">
+      <!-- Header Zone -->
+      <div class="popup-header">
+        <div class="site-status">Ready to collect</div>
+      </div>
 
-    /* Light theme */
-    @media (prefers-color-scheme: light) {
-      :root {
-        --background-color: #ffffff;
-        --text-color: #000000;
-        --text-color-light: #b4b4b4;
-        --text-color-highlight: #cfa119;
-        --button-background: #f0f0f0;
-        --button-hover-background: #e0e0e0;
-        --button-color: #ffffff;
-        --button-border: #afafaf;
-        --accordion-background: #7f7f7f34;
-      }
-    }
+      <!-- Main Zone -->
+      <div class="popup-main">
+        <button id="copy-markdown" class="primary-action">
+          <span class="action-icon">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
+              <path
+                d="m16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
+              />
+            </svg>
+          </span>
+          <span class="action-text">Copy as Markdown</span>
+          <span class="action-hint">Alt+C</span>
+        </button>
 
-    /* Dark theme */
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --background-color: #121212;
-        --text-color: #ffffff;
-        --text-color-light: #b4b4b4;
-        --text-color-highlight: #e6b41cbd;
-        --button-background: #33333388;
-        --button-hover-background: #44444485;
-        --button-color: #ffffff;
-        --button-border: #3a3a3a;
-        --accordion-background: #7e7e7e11;
-      }
-    }
+        <button id="open-markdown" class="secondary-action">
+          <span class="action-icon">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="m6 14 1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"
+              />
+            </svg>
+          </span>
+          <span class="action-text">Open Collection</span>
+          <span class="action-hint">Alt+M</span>
+        </button>
+      </div>
 
-    .settings-container button:hover img {
-      filter: brightness(0.8);
-    }
-
-    .accordion {
-      background-color: var(--accordion-background);
-      color: var(--button-color);
-      cursor: pointer;
-      padding: 5px;
-      width: 98%;
-      text-align: center;
-      border: 0px;
-      border-radius: 5px;
-      outline: none;
-      margin-top: 10px;
-    }
-
-    .accordion:hover {
-      background-color: var(--button-hover-background);
-    }
-
-    .panel {
-      padding: 0 8px;
-      background-color: var(--background-color);
-      max-height: 0;
-      overflow: hidden;
-    }
-
-    .settings-container {
-      text-align: center;
-      margin-top: 10px;
-    }
-  </style>
-</head>
-<body>
-  <div class="button-container">
-    <button id="open-markdown">
-      <span class="button-icon">&#8599;</span>
-      <span class="button-text">Open Collection</span>
-      <span class="shortcut-hint">Alt + M</span>
-    </button>
-    <button id="copy-markdown">
-      <span class="button-icon">&#128203;</span>
-      <span class="button-text">Copy as Markdown</span>
-      <span class="shortcut-hint">Alt + C</span>
-    </button>
-  </div>
-  
-  <button class="accordion">How to use</button>
-  <div class="panel">
-    <div class="info-container">
-      <p>
-        <div>
-          Press <strong style="color: var(--text-color-highlight);">Copy as Markdown</strong> or use <strong style="color: var(--text-color-highlight);">Alt+C</strong> to save the current page and copy its Markdown to clipboard quickly.<br>
-          <hr style="border: 0; height: 1px; background-color: rgba(128, 128, 128, 0.3); margin: 5px 0;">
-          Use <strong style="color: var(--text-color-highlight);">Alt+I</strong> to quickly save (insert) a page without copying.<br>
-          <hr style="border: 0; height: 1px; background-color: rgba(128, 128, 128, 0.3); margin: 5px 0;">
-          Open the Markdown collection page to view and manage your saved URLs (<strong style="color: var(--text-color-highlight);">Alt+M</strong>).
-        </div>
-      </p>
+      <!-- Footer Zone -->
+      <div class="popup-footer">
+        <button id="open-settings" class="utility-action" title="Settings">
+          <span class="utility-icon">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
+              />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </span>
+        </button>
+        <button class="accordion utility-action" title="How to use">
+          <span class="utility-icon">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+              <path d="M12 17h.01" />
+            </svg>
+          </span>
+        </button>
+      </div>
     </div>
-  </div>
-  
-  <div class="settings-container">
-    <button id="open-settings" title="Settings">
-      <img src="icons/cogwheel.png" alt="Settings">
-    </button>
-  </div>
-  
-  <div id="status-message" style="display: none; margin-top: 10px; text-align: center;"></div>
-  <script src="scripts/components/popup.js"></script>
-  <script src="scripts/components/accordion.js"></script>
-</body>
+
+    <!-- Refinement interface (hidden by default) -->
+    <div id="refinement-interface" class="hidden">
+      <div class="button-container refinement-container">
+        <div class="refinement-header">
+          <h3>Refine Content</h3>
+        </div>
+
+        <textarea
+          id="refinement-prompt"
+          placeholder="Enter refinement prompt (e.g., 'summarize', 'make concise')"
+        ></textarea>
+
+        <div class="checkbox-container">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              id="collective-refinement"
+              class="refinement-checkbox"
+            />
+            <span class="checkmark">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+            </span>
+            <span class="checkbox-text">Refine all pages together</span>
+          </label>
+        </div>
+
+        <button id="refine-content" class="refinement-button">
+          <span class="button-icon">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"
+              />
+              <path d="M20 3v4" />
+              <path d="M22 5h-4" />
+              <path d="M4 17v2" />
+              <path d="M5 18H3" />
+            </svg>
+          </span>
+          <span class="button-text">Refine with AI</span>
+        </button>
+
+        <div class="button-row">
+          <button
+            id="cancel-refinement"
+            class="refinement-button cancel-button"
+          >
+            <span class="button-text">Cancel</span>
+          </button>
+
+          <button id="save-without-refine" class="refinement-button">
+            <span class="button-icon">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"
+                />
+                <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" />
+                <path d="M7 3v4a1 1 0 0 0 1 1h4" />
+              </svg>
+            </span>
+            <span class="button-text">Save as-is</span>
+          </button>
+        </div>
+
+        <div class="refinement-footer">
+          Enter to refine • Shift+Enter for new line
+        </div>
+      </div>
+    </div>
+
+    <!-- Info Panel (hidden by default) -->
+    <div class="panel hidden">
+      <div class="info-content">
+        <div class="info-section">
+          <strong>Quick Actions:</strong><br />
+          • <strong>Alt+C</strong> - Copy current page as Markdown<br />
+          • <strong>Alt+M</strong> - Open your collection<br />
+          • <strong>Alt+I</strong> - Quick save without copying
+        </div>
+      </div>
+    </div>
+
+    <div id="status-message" class="status-message"></div>
+    <script src="scripts/components/popup.js"></script>
+    <script src="scripts/components/accordion.js"></script>
+  </body>
 </html>

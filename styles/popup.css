@@ -1,0 +1,692 @@
+/*
+ * This file is part of Markdown Collector.
+ *
+ * Markdown Collector is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Markdown Collector is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Markdown Collector.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/* CSS Reset and Isolation for Popup */
+html {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+  width: 280px !important;
+  max-width: 280px !important;
+  min-width: 280px !important;
+  background-color: var(--popup-background-color) !important;
+  overflow-x: hidden !important;
+}
+
+body {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box !important;
+}
+
+/* Reset only problematic elements */
+div,
+span,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+button,
+textarea {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  outline: none !important;
+  text-decoration: none !important;
+  list-style: none !important;
+}
+
+/* Font Face Definitions */
+@font-face {
+  font-family: "Atkinson Hyperlegible";
+  src: url("../fonts/Atkinson-Hyperlegible-Regular-102.ttf") format("truetype");
+  font-weight: normal;
+}
+
+@font-face {
+  font-family: "Atkinson Hyperlegible";
+  src: url("../fonts/Atkinson-Hyperlegible-Bold-102.ttf") format("truetype");
+  font-weight: bold;
+}
+
+/* uBlock Origin-inspired Design System */
+/* Single Accent Color + 8pt Grid + Visual Hierarchy */
+
+/* Light Theme Variables */
+html {
+  /* Single accent color for all interactive elements */
+  --popup-accent-color: #0969da !important;
+  --popup-accent-hover: #0550ae !important;
+  --popup-accent-light: rgba(9, 105, 218, 0.1) !important;
+
+  /* Neutral greys for everything else */
+  --popup-background-color: #ffffff !important;
+  --popup-text-primary: #24292f !important;
+  --popup-text-secondary: #656d76 !important;
+  --popup-text-muted: #8c959f !important;
+  --popup-border-color: #d1d9e0 !important;
+  --popup-surface-secondary: #f6f8fa !important;
+}
+
+/* Dark Theme Variables */
+@media (prefers-color-scheme: dark) {
+  html {
+    /* Same accent color for consistency */
+    --popup-accent-color: #58a6ff !important;
+    --popup-accent-hover: #79c0ff !important;
+    --popup-accent-light: rgba(88, 166, 255, 0.08) !important;
+
+    /* Dark neutrals */
+    --popup-background-color: #0d1117 !important;
+    --popup-text-primary: #f0f6fc !important;
+    --popup-text-secondary: #8b949e !important;
+    --popup-text-muted: #6e7681 !important;
+    --popup-border-color: #30363d !important;
+    --popup-surface-secondary: #161b22 !important;
+  }
+}
+
+/* Main Body Styles - 8pt Grid System */
+body {
+  font-family: system-ui, -apple-system, sans-serif !important;
+  width: 280px !important;
+  max-width: 280px !important;
+  min-width: 280px !important;
+  padding: 0 !important;
+  background-color: var(--popup-background-color) !important;
+  color: var(--popup-text-primary) !important;
+  position: relative !important;
+  min-height: auto !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  border-radius: 8px !important;
+}
+
+/* Three-Zone Layout Structure */
+.popup-header {
+  padding: 12px 12px 6px 12px !important;
+  background-color: var(--popup-surface-secondary) !important;
+  border-bottom: 1px solid var(--popup-border-color) !important;
+  text-align: center !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.popup-main {
+  padding: 16px 12px !important;
+  text-align: center !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.popup-footer {
+  padding: 6px 12px 12px 12px !important;
+  border-top: 1px solid var(--popup-border-color) !important;
+  display: flex !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Header Zone Styles */
+.site-status {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: var(--popup-text-secondary) !important;
+  margin: 0 !important;
+}
+
+/* Action Button Styles - Visual Hierarchy */
+.primary-action {
+  /* Gentle primary action - subtle but distinct */
+  background-color: var(--popup-surface-secondary) !important;
+  color: var(--popup-text-primary) !important;
+  border: 1px solid var(--popup-border-color) !important;
+  border-radius: 6px !important;
+  padding: 10px 14px !important;
+  font-family: system-ui, -apple-system, sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  cursor: pointer !important;
+  transition: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 6px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.primary-action:hover {
+  background-color: var(--popup-accent-light) !important;
+  color: var(--popup-accent-color) !important;
+}
+
+.secondary-action {
+  /* Outline style for secondary action */
+  background-color: transparent !important;
+  color: var(--popup-text-primary) !important;
+  border: 1px solid var(--popup-border-color) !important;
+  border-radius: 6px !important;
+  padding: 8px 14px !important;
+  font-family: system-ui, -apple-system, sans-serif !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  transition: none !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.secondary-action:hover {
+  color: var(--popup-accent-color) !important;
+  background-color: var(--popup-accent-light) !important;
+}
+
+/* Action Icon and Text */
+.action-icon {
+  font-size: 20px !important;
+  line-height: 1 !important;
+}
+
+/* Main action icon styles */
+.action-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+}
+
+.action-icon svg {
+  display: block !important;
+  width: 20px !important;
+  height: 20px !important;
+}
+
+.utility-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+}
+
+.utility-icon svg {
+  display: block !important;
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.action-text {
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  margin: 0 !important;
+}
+
+.action-hint {
+  font-size: 12px !important;
+  color: var(--popup-text-muted) !important;
+  font-weight: normal !important;
+  margin: 0 !important;
+}
+
+.primary-action .action-hint {
+  color: var(--popup-text-muted) !important;
+}
+
+.primary-action:hover .action-hint {
+  color: var(--popup-text-muted) !important;
+}
+
+.secondary-action .action-hint {
+  color: var(--popup-text-muted) !important;
+}
+
+/* Utility Actions (Footer) */
+.utility-action {
+  background: none !important;
+  border: none !important;
+  padding: 6px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  transition: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.utility-action:hover {
+  background-color: var(--popup-accent-light) !important;
+}
+
+.utility-icon {
+  font-size: 18px !important;
+  color: var(--popup-text-secondary) !important;
+}
+
+.utility-action:hover .utility-icon {
+  color: var(--popup-accent-color) !important;
+}
+
+/* Disabled State */
+.primary-action:disabled,
+.secondary-action:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+.primary-action:disabled:hover,
+.secondary-action:disabled:hover {
+  transform: none !important;
+  background-color: var(--popup-accent-color) !important;
+  border-color: var(--popup-accent-color) !important;
+}
+
+.secondary-action:disabled:hover {
+  background-color: transparent !important;
+  border-color: var(--popup-border-color) !important;
+  color: var(--popup-text-primary) !important;
+}
+
+/* Info Panel Styles */
+.panel {
+  padding: 0 !important;
+  background-color: var(--popup-surface-secondary) !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  transition: max-height 0.3s ease !important;
+  border-top: 1px solid var(--popup-border-color) !important;
+}
+
+.panel:not(.hidden) {
+  max-height: 150px !important;
+  padding: 12px !important;
+}
+
+.info-content {
+  font-size: 14px !important;
+  color: var(--popup-text-secondary) !important;
+  line-height: 1.5 !important;
+}
+
+.info-section {
+  margin: 0 !important;
+}
+
+.info-section strong {
+  color: var(--popup-text-primary) !important;
+  font-weight: 600 !important;
+}
+
+/* Status Message */
+.status-message {
+  display: none !important;
+  padding: 8px 12px !important;
+  text-align: center !important;
+  font-size: 13px !important;
+  border-top: 1px solid var(--popup-border-color) !important;
+  background-color: var(--popup-surface-secondary) !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  word-wrap: break-word !important;
+}
+
+.status-message.success {
+  color: #1a7f37 !important;
+  background-color: #dcfce7 !important;
+}
+
+.status-message.error {
+  color: #d1242f !important;
+  background-color: #ffeef0 !important;
+}
+
+.status-message.info {
+  color: var(--popup-accent-color) !important;
+  background-color: var(--popup-accent-light) !important;
+}
+
+/* Refinement Interface Styles - Match main popup design */
+.refinement-button {
+  background-color: var(--popup-surface-secondary) !important;
+  color: var(--popup-text-primary) !important;
+  border: 1px solid var(--popup-border-color) !important;
+  border-radius: 6px !important;
+  padding: 8px 12px !important;
+  font-family: system-ui, -apple-system, sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  margin: 6px 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Button icon styles for refinement interface */
+.button-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+}
+
+.button-icon svg {
+  display: block !important;
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.button-text {
+  display: flex !important;
+  align-items: center !important;
+  line-height: 1.2 !important;
+}
+
+/* Specific adjustment for cancel button X icon */
+.cancel-button .button-icon svg {
+  margin-top: 2px !important;
+}
+
+.refinement-button:hover {
+  color: var(--popup-accent-color) !important;
+  background-color: var(--popup-accent-light) !important;
+}
+
+.refinement-button:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  background-color: var(--popup-surface-secondary) !important;
+  border-color: var(--popup-border-color) !important;
+  color: var(--popup-text-primary) !important;
+}
+
+/* Primary refinement button (like "Refine Content") */
+.refinement-button.primary {
+  border: 2px solid var(--popup-accent-color) !important;
+  font-weight: 600 !important;
+}
+
+/* Cancel Button - match secondary action style */
+.cancel-button {
+  background-color: transparent !important;
+  color: var(--popup-text-primary) !important;
+  border: 1px solid var(--popup-border-color) !important;
+}
+
+.cancel-button:hover {
+  color: var(--popup-accent-color) !important;
+  background-color: var(--popup-accent-light) !important;
+}
+
+/* Checkbox styling for collective refinement */
+.checkbox-container {
+  margin: 8px 0 12px 0 !important;
+  display: none; /* Hidden by default, shown only for multi-tab */
+}
+
+.checkbox-container.show-for-multi-tab {
+  display: block !important;
+}
+
+.checkbox-label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  color: var(--popup-text-primary) !important;
+  font-family: system-ui, -apple-system, sans-serif !important;
+}
+
+.refinement-checkbox {
+  appearance: none !important;
+  width: 18px !important;
+  height: 18px !important;
+  border: 1px solid var(--popup-border-color) !important;
+  border-radius: 3px !important;
+  background-color: var(--popup-surface-secondary) !important;
+  cursor: pointer !important;
+  position: relative !important;
+  transition: none !important;
+}
+
+.refinement-checkbox:checked {
+  background-color: var(--popup-accent-color) !important;
+  border-color: var(--popup-accent-color) !important;
+}
+
+.checkmark {
+  position: absolute !important;
+  left: 3px !important;
+  top: 3px !important;
+  display: none !important;
+}
+
+.refinement-checkbox:checked + .checkmark {
+  display: block !important;
+}
+
+.checkmark svg {
+  color: white !important;
+  stroke: white !important;
+}
+
+.checkbox-text {
+  user-select: none !important;
+}
+
+/* Button row for save and cancel buttons */
+.button-row {
+  display: flex !important;
+  gap: 8px !important;
+  margin: 6px 0 !important;
+}
+
+.button-row .refinement-button {
+  flex: 1 !important;
+  margin: 0 !important;
+}
+
+/* Textarea Styles - Match main design */
+#refinement-prompt {
+  width: 100% !important;
+  height: 80px !important;
+  padding: 12px !important;
+  margin-bottom: 12px !important;
+  background-color: var(--popup-surface-secondary) !important;
+  color: var(--popup-text-primary) !important;
+  border: 1px solid var(--popup-border-color) !important;
+  border-radius: 6px !important;
+  font-family: system-ui, -apple-system, sans-serif !important;
+  font-size: 14px !important;
+  resize: none !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+}
+
+#refinement-prompt:focus {
+  border-color: var(--popup-accent-color) !important;
+  outline: none !important;
+}
+
+/* Heading Styles - Match main design */
+h3 {
+  margin: 0 0 12px 0 !important;
+  color: var(--popup-text-primary) !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  font-family: system-ui, -apple-system, sans-serif !important;
+  text-align: center !important;
+}
+
+/* Paragraph Styles - Match main design */
+p {
+  margin: 0 0 8px 0 !important;
+  padding: 0 !important;
+  color: var(--popup-text-secondary) !important;
+  font-family: system-ui, -apple-system, sans-serif !important;
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+}
+
+/* Div Styles - Match main design */
+div {
+  color: var(--popup-text-primary) !important;
+  font-family: system-ui, -apple-system, sans-serif !important;
+}
+
+/* Strong/Bold Styles */
+strong {
+  color: var(--popup-text-color-highlight) !important;
+  font-weight: bold !important;
+  font-family: "Atkinson Hyperlegible", Arial, sans-serif !important;
+}
+
+/* HR Styles */
+hr {
+  border: 0 !important;
+  height: 1px !important;
+  background-color: rgba(128, 128, 128, 0.3) !important;
+  margin: 5px 0 !important;
+}
+
+/* Status Message */
+#status-message {
+  display: none !important;
+  margin-top: 10px !important;
+  text-align: center !important;
+  color: var(--popup-text-color) !important;
+  font-family: "Atkinson Hyperlegible", Arial, sans-serif !important;
+}
+
+/* Animation Keyframes */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Loading Animation */
+.refinement-button .button-icon:contains("⏳") {
+  animation: pulse 1.5s ease-in-out infinite !important;
+}
+
+/* Success State */
+.refinement-button .button-icon:contains("✅") {
+  color: #28a745 !important;
+}
+
+/* Error State */
+.refinement-button .button-icon:contains("❌") {
+  color: #dc3545 !important;
+}
+
+/* Specific Layout Fixes */
+.settings-container {
+  text-align: center !important;
+  margin-top: 10px !important;
+}
+
+.shortcut-hint {
+  font-size: 11px !important;
+  opacity: 0.7 !important;
+  margin-top: 3px !important;
+}
+
+/* Interface Visibility */
+#normal-interface,
+#refinement-interface {
+  color: var(--popup-text-color) !important;
+  font-family: "Atkinson Hyperlegible", Arial, sans-serif !important;
+}
+
+/* Additional Reset for Common Conflicts */
+span,
+a,
+img {
+  color: inherit !important;
+  font-family: inherit !important;
+  text-decoration: none !important;
+  border: none !important;
+  outline: none !important;
+}
+
+/* Ensure proper display for flex containers */
+.button-container[style*="flex-direction: column"] {
+  flex-direction: column !important;
+  gap: 10px !important;
+  padding: 10px !important;
+}
+
+/* Additional classes for refinement interface */
+.hidden {
+  display: none !important;
+}
+
+.refinement-container {
+  flex-direction: column !important;
+  gap: 10px !important;
+  padding: 10px !important;
+}
+
+.refinement-header {
+  text-align: center !important;
+  margin-bottom: 5px !important;
+}
+
+.refinement-footer {
+  margin-top: 5px !important;
+  font-size: 10px !important;
+  color: var(--popup-text-color) !important;
+  opacity: 0.6 !important;
+  text-align: center !important;
+}
