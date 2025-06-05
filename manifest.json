@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Markdown Collector",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "Privacy-focused webpage to markdown converter. Stores all data locally, with optional AI-powered content refinement.",
   "permissions": [
     "tabs",
